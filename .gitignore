@@ -1,0 +1,18 @@
+# 忽略系统文件
+.DS_Store
+Thumbs.db
+
+# 忽略 IDE 配置
+.vscode/
+.idea/
+
+# 忽略用户上传的图片（只保留文件夹结构，不上传里面的具体图片）
+uploads/*
+!uploads/.gitkeep
+
+# 忽略临时日志
+*.log
+
+# 忽略敏感配置（以后把密码放这里，不提交）
+config/config.php
+.env
