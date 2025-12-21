@@ -15,8 +15,9 @@
 
 动态交互：利用 Ajax 实现无刷新发布、评论、点赞，及 JS 动态交互效果。
 
-2. 项目结构
+### 2. 项目结构
 
+```text
 weibo-system/
 ├── admin/                # 管理员模块（对应要求中的管理员管理功能 ）
 │   ├── index.php         # 管理后台主页
@@ -41,6 +42,7 @@ weibo-system/
 ├── login.php             # 登录页面
 ├── register.php          # 注册页面
 └── README.md             # 项目说明
+```
 
 3. 成员任务分工建议 
 
