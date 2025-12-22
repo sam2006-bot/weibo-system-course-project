@@ -49,7 +49,9 @@ $posts = $stmt->fetchAll();
             </div>
             <div class="user-menu">
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <span>欢迎, <?php echo h($_SESSION['username']); ?></span>
+                    <a href="profile.php?id=<?php echo $_SESSION['user_id']; ?>" class="nav-avatar-link">
+                        <span>欢迎, <?php echo h($_SESSION['username']); ?></span>
+                    </a>
                     <?php if ($_SESSION['role'] === 'admin'): ?>
                         <a href="admin/index.php" style="margin-left: 10px;">管理后台</a>
                     <?php endif; ?>
@@ -93,9 +95,17 @@ $posts = $stmt->fetchAll();
                     <?php foreach ($posts as $post): ?>
                         <div class="weibo-item">
                             <div class="weibo-header">
-                                <div class="avatar"></div> <!-- 默认头像占位 -->
+                                <!-- 头像链接 -->
+                                <a href="profile.php?id=<?php echo $post['user_id']; ?>">
+                                    <img src="<?php echo $post['avatar'] ? h($post['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                        class="avatar"
+                                        onerror="this.src='https://via.placeholder.com/50?text=User'">
+                                </a>
                                 <div class="user-info">
-                                    <span class="username"><?php echo h($post['username']); ?></span>
+                                    <!-- 用户名链接 -->
+                                    <a href="profile.php?id=<?php echo $post['user_id']; ?>" class="username-link">
+                                        <span class="username"><?php echo h($post['username']); ?></span>
+                                    </a>
                                     <span class="time"><?php echo time_ago($post['created_at']); ?></span>
                                 </div>
                             </div>
