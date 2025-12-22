@@ -75,10 +75,11 @@ $posts = $stmt->fetchAll();
                         <textarea id="weibo-content" rows="3" placeholder="分享你的想法..."></textarea>
                         <div class="publish-tools">
                             <label class="upload-label">
-                                <i class="far fa-image"></i> 图片
-                                <input type="file" id="weibo-image" accept="image/*">
+                                <i class="far fa-image"></i> 图片(最多9张)
+                                <!-- 修改：添加 multiple 属性支持多选 -->
+                                <input type="file" id="weibo-image" accept="image/*" multiple>
                             </label>
-                            <span class="upload-tip">支持 JPG/PNG/GIF/WebP，5MB以内</span>
+                            <span class="upload-tip">支持 JPG/PNG/GIF/WebP，单张5MB以内</span>
                         </div>
                         <div style="margin-top: 10px; text-align: right;">
                             <button id="publish-btn" class="btn">发布</button>
@@ -114,11 +115,31 @@ $posts = $stmt->fetchAll();
                                     <?php echo h($post['content']); ?>
                                 </div>
                             <?php endif; ?>
-                            <?php if (!empty($post['image_path'] ?? '')): ?>
-                                <div class="weibo-image">
-                                    <img src="<?php echo h($post['image_path']); ?>" alt="微博图片">
+
+                            <!-- 图片展示逻辑修改：支持九宫格 -->
+                            <?php
+                            $imgs = [];
+                            $db_path = $post['image_path'] ?? '';
+                            if (!empty($db_path)) {
+                                // 尝试解析 JSON
+                                $json_imgs = json_decode($db_path, true);
+                                if (json_last_error() === JSON_ERROR_NONE && is_array($json_imgs)) {
+                                    $imgs = $json_imgs; // 新格式：多图
+                                } else {
+                                    $imgs = [$db_path]; // 兼容旧格式：单图
+                                }
+                            }
+                            ?>
+                            <?php if (!empty($imgs)): ?>
+                                <div class="weibo-image-grid grid-<?php echo count($imgs); ?>">
+                                    <?php foreach ($imgs as $img_url): ?>
+                                        <div class="grid-item">
+                                            <img src="<?php echo h($img_url); ?>" alt="微博图片" loading="lazy">
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
+
                             <div class="weibo-footer">
                                 <span class="action-btn comment-toggle-btn" data-id="<?php echo $post['id']; ?>">
                                     <i class="far fa-comment"></i> 评论

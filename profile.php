@@ -115,13 +115,31 @@ $posts = $stmt_posts->fetchAll();
                             <div class="weibo-content">
                                 <?php echo h($post['content']); ?>
                             </div>
-                            <?php if (!empty($post['image_path'])): ?>
-                                <div class="weibo-image">
-                                    <img src="<?php echo h($post['image_path']); ?>" alt="图片">
+
+                            <!-- 图片展示逻辑修改：支持九宫格 -->
+                            <?php
+                            $imgs = [];
+                            $db_path = $post['image_path'] ?? '';
+                            if (!empty($db_path)) {
+                                $json_imgs = json_decode($db_path, true);
+                                if (json_last_error() === JSON_ERROR_NONE && is_array($json_imgs)) {
+                                    $imgs = $json_imgs;
+                                } else {
+                                    $imgs = [$db_path];
+                                }
+                            }
+                            ?>
+                            <?php if (!empty($imgs)): ?>
+                                <div class="weibo-image-grid grid-<?php echo count($imgs); ?>">
+                                    <?php foreach ($imgs as $img_url): ?>
+                                        <div class="grid-item">
+                                            <img src="<?php echo h($img_url); ?>" alt="图片" loading="lazy">
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
                             <?php endif; ?>
 
-                            <!-- 交互按钮区域 (补全) -->
+                            <!-- 交互按钮区域 -->
                             <div class="weibo-footer">
                                 <span class="action-btn comment-toggle-btn" data-id="<?php echo $post['id']; ?>">
                                     <i class="far fa-comment"></i> 评论
@@ -132,7 +150,7 @@ $posts = $stmt_posts->fetchAll();
                                 </span>
                             </div>
 
-                            <!-- 评论区域 (补全) -->
+                            <!-- 评论区域 -->
                             <div class="comments-section" id="comments-<?php echo $post['id']; ?>">
                                 <?php if (isset($_SESSION['user_id'])): ?>
                                     <div class="comment-input-group">
@@ -141,7 +159,6 @@ $posts = $stmt_posts->fetchAll();
                                     </div>
                                 <?php endif; ?>
                                 <div class="comment-list" id="comment-list-<?php echo $post['id']; ?>">
-                                    <!-- PHP 预加载部分评论 -->
                                     <?php
                                     $stmt_c = $pdo->prepare("SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.id WHERE c.post_id = ? ORDER BY c.created_at DESC LIMIT 5");
                                     $stmt_c->execute([$post['id']]);

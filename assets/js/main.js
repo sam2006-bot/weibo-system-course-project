@@ -1,28 +1,36 @@
 // assets/js/main.js
 document.addEventListener('DOMContentLoaded', function() {
     
-    // 1. 发布微博 (Ajax)
+    // 1. 发布微博 (支持多图上传)
     const publishBtn = document.getElementById('publish-btn');
     if (publishBtn) {
         publishBtn.addEventListener('click', function() {
             const content = document.getElementById('weibo-content').value;
             const imageInput = document.getElementById('weibo-image');
-            const imageFile = imageInput && imageInput.files ? imageInput.files[0] : null;
-            const maxSize = 5 * 1024 * 1024;
-            if (!content.trim() && !imageFile) {
+            // 获取所有选中的文件
+            const files = imageInput && imageInput.files ? imageInput.files : [];
+            
+            if (!content.trim() && files.length === 0) {
                 alert('内容或图片不能为空');
                 return;
             }
-            if (imageFile && imageFile.size > maxSize) {
-                alert('图片大小不能超过 5MB');
+            
+            if (files.length > 9) {
+                alert('最多只能选择 9 张图片');
                 return;
             }
 
             const formData = new FormData();
             formData.append('content', content);
-            if (imageFile) {
-                formData.append('image', imageFile);
+            
+            // 循环添加到 formData，注意 key 是 images[]
+            for (let i = 0; i < files.length; i++) {
+                formData.append('images[]', files[i]);
             }
+
+            // 添加 loading 状态
+            publishBtn.disabled = true;
+            publishBtn.textContent = '发布中...';
 
             fetch('api/post_weibo.php', {
                 method: 'POST',
@@ -32,15 +40,20 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     alert('发布成功！');
-                    if (imageInput) {
-                        imageInput.value = '';
-                    }
-                    location.reload(); // 简单处理：刷新页面显示新内容
+                    if (imageInput) imageInput.value = '';
+                    location.reload(); // 刷新页面显示新内容
                 } else {
                     alert(data.message || '发布失败');
+                    publishBtn.disabled = false;
+                    publishBtn.textContent = '发布';
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误');
+                publishBtn.disabled = false;
+                publishBtn.textContent = '发布';
+            });
         });
     }
 
@@ -49,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function() {
             const postId = this.dataset.id;
             const likeCountSpan = this.querySelector('.like-count');
-            const icon = this.querySelector('i'); // 假设用了 FontAwesome，或者是文字
 
             fetch('api/like_weibo.php', {
                 method: 'POST',
@@ -73,7 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 } else {
                     if (data.message === '请先登录') {
-                        // JS 动态效果 2：弹出登录模态框（假设有实现，或者跳转）
                         window.location.href = 'login.php';
                     } else {
                         alert(data.message);
@@ -83,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 3. 评论展开/收起 (JS动态效果 3: Slide Toggle 模拟)
+    // 3. 评论展开/收起
     document.querySelectorAll('.comment-toggle-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const postId = this.dataset.id;

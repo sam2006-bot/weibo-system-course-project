@@ -135,9 +135,9 @@ body {
     background-color: #eb7350;
 }
 
-.btn-secondary {
-    background-color: #f2f2f2;
-    color: #333;
+.btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
 
 /* 微博列表 */
@@ -153,7 +153,7 @@ body {
     margin-bottom: 10px;
 }
 
-/* 头像样式更新 */
+/* 头像样式 */
 .avatar {
     width: 50px;
     height: 50px;
@@ -161,7 +161,6 @@ body {
     background: #f0f0f0;
     margin-right: 10px;
     object-fit: cover;
-    /* 确保图片不变形 */
     cursor: pointer;
 }
 
@@ -189,15 +188,73 @@ body {
     line-height: 1.6;
 }
 
-.weibo-image {
+/* --- 九宫格图片样式 START --- */
+.weibo-image-grid {
+    display: grid;
+    gap: 5px;
     margin-bottom: 10px;
+    margin-top: 10px;
+    width: 100%;
+    max-width: 400px;
+    /* 限制最大宽度 */
 }
 
-.weibo-image img {
-    max-width: 100%;
-    border-radius: 6px;
-    display: block;
+/* 默认每行 3 列 (3, 5-9 张图) */
+.weibo-image-grid {
+    grid-template-columns: repeat(3, 1fr);
 }
+
+/* 图片单元格 */
+.weibo-image-grid .grid-item {
+    aspect-ratio: 1 / 1;
+    /* 强制正方形 */
+    overflow: hidden;
+    border-radius: 4px;
+    background: #f4f4f4;
+}
+
+.weibo-image-grid .grid-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* 裁剪填充 */
+    cursor: zoom-in;
+    transition: opacity 0.3s;
+}
+
+.weibo-image-grid .grid-item img:hover {
+    opacity: 0.9;
+}
+
+/* 1 张图：自适应大小 */
+.weibo-image-grid.grid-1 {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    /* 单张图可以宽一点 */
+}
+
+.weibo-image-grid.grid-1 .grid-item {
+    aspect-ratio: auto;
+    /* 取消正方形限制 */
+    max-height: 500px;
+}
+
+.weibo-image-grid.grid-1 .grid-item img {
+    object-fit: contain;
+    /* 完整显示 */
+    max-height: 500px;
+    width: auto;
+    max-width: 100%;
+}
+
+/* 2 张图 或 4 张图：显示为 2 列 */
+.weibo-image-grid.grid-2,
+.weibo-image-grid.grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 300px;
+}
+
+/* --- 九宫格图片样式 END --- */
 
 .weibo-footer {
     display: flex;
@@ -226,7 +283,6 @@ body {
     margin-top: 10px;
     border-radius: 4px;
     display: none;
-    /* 默认隐藏 */
 }
 
 .comment-input-group {
@@ -264,7 +320,6 @@ body {
     border: 3px solid #f2f2f2;
 }
 
-/* 头像上的“更换”遮罩 */
 .avatar-upload-overlay {
     position: absolute;
     top: 0;
@@ -305,6 +360,5 @@ body {
 
     .sidebar {
         order: -1;
-        /* 侧边栏在移动端置顶 */
     }
 }
