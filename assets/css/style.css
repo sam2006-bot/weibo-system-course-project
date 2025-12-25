@@ -2,11 +2,14 @@
 :root {
     --primary-color: #fa7d3c;
     /* 微博橙 */
+    --primary-hover: #eb7350;
     --bg-color: #f2f2f2;
     --card-bg: #ffffff;
     --text-main: #333;
     --text-sub: #808080;
     --border-color: #e6e6e6;
+    --input-bg: #f7f7f7;
+    --shadow-color: rgba(0, 0, 0, 0.1);
 }
 
 body {
@@ -48,6 +51,7 @@ body {
     text-decoration: none;
     color: var(--text-main);
     font-size: 14px;
+    transition: color 0.2s;
 }
 
 .user-menu a:hover {
@@ -89,6 +93,12 @@ body {
     resize: none;
     box-sizing: border-box;
     font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.publish-box textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
 }
 
 .publish-tools {
@@ -128,11 +138,15 @@ body {
     border-radius: 20px;
     cursor: pointer;
     font-size: 14px;
-    transition: background 0.3s;
+    transition: background 0.3s, transform 0.1s;
 }
 
 .btn:hover {
-    background-color: #eb7350;
+    background-color: var(--primary-hover);
+}
+
+.btn:active {
+    transform: scale(0.98);
 }
 
 .btn:disabled {
@@ -293,9 +307,17 @@ body {
 
 .comment-input {
     flex: 1;
-    padding: 5px;
+    padding: 8px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 18px;
+    background-color: #f0f2f5;
+    outline: none;
+    transition: background 0.2s;
+}
+
+.comment-input:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
 }
 
 /* 个人主页样式 */
@@ -349,6 +371,180 @@ body {
 .profile-info p {
     margin: 5px 0;
     color: var(--text-sub);
+}
+
+/* =========================================
+   全新现代化登录/注册页面样式 (Modern Auth)
+   ========================================= */
+
+/* 登录/注册页面的背景 */
+body.auth-body {
+    background: linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%);
+    /* 备用渐变，更温暖 */
+    background: linear-gradient(135deg, #ffe2d1 0%, #f2f2f2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* 现代卡片容器 */
+.auth-card-modern {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 400px;
+    overflow: hidden;
+    position: relative;
+    padding-bottom: 20px;
+}
+
+.auth-header {
+    text-align: center;
+    padding: 40px 30px 20px;
+}
+
+.auth-logo {
+    font-size: 48px;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+.auth-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 5px;
+}
+
+.auth-subtitle {
+    font-size: 14px;
+    color: #999;
+    margin: 0;
+}
+
+.auth-form {
+    padding: 0 30px 20px;
+}
+
+/* 输入框组 */
+.modern-input-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.modern-input-group i {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+    font-size: 16px;
+    transition: color 0.3s;
+    pointer-events: none;
+    /* 防止图标挡住输入点击 */
+}
+
+.modern-input {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    /* 左边距留给图标 */
+    border: 1px solid #eee;
+    background-color: var(--input-bg);
+    border-radius: 25px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: all 0.3s;
+}
+
+.modern-input:focus {
+    background-color: #fff;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(250, 125, 60, 0.1);
+    outline: none;
+}
+
+.modern-input:focus+i {
+    color: var(--primary-color);
+}
+
+/* 按钮 */
+.modern-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 10px;
+    color: white;
+    background: linear-gradient(to right, #fa7d3c, #f55f10);
+    box-shadow: 0 4px 15px rgba(250, 125, 60, 0.3);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.modern-btn:hover {
+    background: linear-gradient(to right, #f55f10, #fa7d3c);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(250, 125, 60, 0.4);
+}
+
+.modern-btn:active {
+    transform: scale(0.98);
+}
+
+/* 底部链接 */
+.auth-links {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 14px;
+}
+
+.auth-links a {
+    color: var(--text-sub);
+    text-decoration: none;
+    margin: 0 8px;
+    transition: color 0.2s;
+}
+
+.auth-links a:hover {
+    color: var(--primary-color);
+}
+
+/* 错误提示框 */
+.error-message {
+    background-color: #fff2f0;
+    border: 1px solid #ffccc7;
+    color: #ff4d4f;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.success-message {
+    background-color: #f6ffed;
+    border: 1px solid #b7eb8f;
+    color: #52c41a;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 /* 响应式 */
