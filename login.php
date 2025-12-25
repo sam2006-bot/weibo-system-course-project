@@ -6,6 +6,8 @@ $error = '';
 $success_msg = '';
 
 // 检查是否有注册成功的标志
+// 感觉有点空旷
+// 是不是像X那样占据整个页面比较好？
 if (isset($_GET['registered']) && $_GET['registered'] == 1) {
     $success_msg = "注册成功，请登录您的账号";
 }
