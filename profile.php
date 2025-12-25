@@ -36,6 +36,7 @@ $stmt_posts = $pdo->prepare("
 ");
 $stmt_posts->execute([$current_user_id, $view_user_id]);
 $posts = $stmt_posts->fetchAll();
+$total_likes = array_sum(array_column($posts, 'like_count'));
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -48,7 +49,7 @@ $posts = $stmt_posts->fetchAll();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
-<body>
+<body class="profile-body">
 
     <!-- 导航栏 -->
     <nav class="navbar">
@@ -68,36 +69,60 @@ $posts = $stmt_posts->fetchAll();
         </div>
     </nav>
 
-    <div class="container">
-        <div class="main-content">
+    <div class="container profile-layout">
+        <div class="profile-main">
 
             <!-- 用户信息卡片 -->
-            <div class="card profile-header">
-                <div class="profile-avatar-container">
-                    <img src="<?php echo $user_info['avatar'] ? h($user_info['avatar']) : 'assets/images/default-avatar.png'; ?>"
-                        alt="头像" class="profile-avatar-large" id="profile-avatar-img"
-                        onerror="this.src='https://via.placeholder.com/100?text=User'">
+            <section class="card profile-header">
+                <div class="profile-banner">
+                    <div class="profile-banner-content">
+                        <span class="profile-badge">个人主页</span>
+                    </div>
+                </div>
+                <div class="profile-header-content">
+                    <div class="profile-avatar-container">
+                        <img src="<?php echo $user_info['avatar'] ? h($user_info['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                            alt="头像" class="profile-avatar-large" id="profile-avatar-img"
+                            onerror="this.src='https://via.placeholder.com/100?text=User'">
 
-                    <?php if ($is_own_profile): ?>
-                        <div class="avatar-upload-overlay" onclick="document.getElementById('avatar-input').click()">
-                            <i class="fas fa-camera"></i> 更换
+                        <?php if ($is_own_profile): ?>
+                            <div class="avatar-upload-overlay" onclick="document.getElementById('avatar-input').click()">
+                                <i class="fas fa-camera"></i> 更换
+                            </div>
+                            <input type="file" id="avatar-input" style="display: none;" accept="image/*">
+                        <?php endif; ?>
+                    </div>
+
+                    <div class="profile-info">
+                        <div class="profile-title-row">
+                            <h2><?php echo h($user_info['username']); ?></h2>
+                            <span class="profile-handle">#<?php echo $user_info['id']; ?></span>
                         </div>
-                        <input type="file" id="avatar-input" style="display: none;" accept="image/*">
-                    <?php endif; ?>
+                        <p class="profile-joined">
+                            加入时间：<?php echo date('Y年m月d日', strtotime($user_info['created_at'])); ?>
+                        </p>
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <span class="stat-value"><?php echo count($posts); ?></span>
+                                <span class="stat-label">微博</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value"><?php echo $total_likes; ?></span>
+                                <span class="stat-label">获赞</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="profile-info">
-                    <h2><?php echo h($user_info['username']); ?></h2>
-                    <p style="color: #808080; font-size: 14px;">
-                        加入时间：<?php echo date('Y年m月d日', strtotime($user_info['created_at'])); ?>
-                    </p>
-                    <p>共发布 <?php echo count($posts); ?> 条微博</p>
-                </div>
-            </div>
+            </section>
 
             <!-- 微博列表 -->
-            <div class="card">
-                <h3>我的动态</h3>
+            <section class="card feed-card">
+                <div class="feed-header">
+                    <div class="feed-title">
+                        <h3>我的动态</h3>
+                        <span class="feed-sub">共 <?php echo count($posts); ?> 条</span>
+                    </div>
+                </div>
                 <?php if (empty($posts)): ?>
                     <p style="text-align: center; color: #999; padding: 20px;">这个人很懒，什么都没写。</p>
                 <?php else: ?>
@@ -175,15 +200,23 @@ $posts = $stmt_posts->fetchAll();
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </div>
+            </section>
         </div>
 
-        <div class="sidebar">
-            <div class="card">
+        <aside class="profile-aside">
+            <div class="card profile-side-card">
                 <h3>关于用户</h3>
                 <p>这里是 <?php echo h($user_info['username']); ?> 的个人空间。</p>
             </div>
-        </div>
+            <div class="card profile-side-card">
+                <h3>资料卡片</h3>
+                <ul class="profile-meta-list">
+                    <li><i class="fas fa-calendar-alt"></i> 加入时间：<?php echo date('Y年m月d日', strtotime($user_info['created_at'])); ?></li>
+                    <li><i class="fas fa-hashtag"></i> 用户ID：<?php echo $user_info['id']; ?></li>
+                    <li><i class="fas fa-heart"></i> 获赞：<?php echo $total_likes; ?></li>
+                </ul>
+            </div>
+        </aside>
     </div>
 
     <!-- 必须引入 main.js 才能使用点赞和评论功能 -->

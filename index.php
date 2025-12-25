@@ -24,6 +24,27 @@ $sql = "SELECT p.*, u.username, u.avatar,
 $stmt = $pdo->prepare($sql);
 $stmt->execute(array_merge([$current_user_id], $params));
 $posts = $stmt->fetchAll();
+
+$current_user = null;
+if (isset($_SESSION['user_id'])) {
+    $stmt_user = $pdo->prepare("SELECT id, username, avatar FROM users WHERE id = ?");
+    $stmt_user->execute([$_SESSION['user_id']]);
+    $current_user = $stmt_user->fetch();
+}
+$nav_user_name = $_SESSION['username'] ?? '';
+$nav_user_id = $_SESSION['user_id'] ?? 0;
+$nav_user_avatar = 'assets/images/default-avatar.png';
+if ($current_user) {
+    if (!empty($current_user['username'])) {
+        $nav_user_name = $current_user['username'];
+    }
+    if (!empty($current_user['id'])) {
+        $nav_user_id = $current_user['id'];
+    }
+    if (!empty($current_user['avatar'])) {
+        $nav_user_avatar = $current_user['avatar'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -37,41 +58,76 @@ $posts = $stmt->fetchAll();
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
-<body>
+<body class="home-body">
 
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="index.php" class="logo"><i class="fab fa-weibo"></i> 微博</a>
-            <div class="search-box">
-                <form action="index.php" method="GET">
-                    <input type="text" name="q" placeholder="搜索微博..." value="<?php echo isset($_GET['q']) ? h($_GET['q']) : ''; ?>" style="padding: 5px; border-radius: 15px; border: 1px solid #ccc;">
-                </form>
-            </div>
-            <div class="user-menu">
+    <div class="x-shell">
+        <aside class="x-sidebar">
+            <a href="index.php" class="x-brand" aria-label="微博首页">
+                <i class="fab fa-weibo"></i>
+            </a>
+            <nav class="x-nav">
+                <a class="x-nav-item active" href="index.php">
+                    <i class="fas fa-home"></i>
+                    <span>主页</span>
+                </a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a href="profile.php?id=<?php echo $_SESSION['user_id']; ?>" class="nav-avatar-link">
-                        <span>欢迎, <?php echo h($_SESSION['username']); ?></span>
+                    <a class="x-nav-item" href="profile.php?id=<?php echo $nav_user_id; ?>">
+                        <i class="far fa-user"></i>
+                        <span>个人主页</span>
                     </a>
-                    <?php if ($_SESSION['role'] === 'admin'): ?>
-                        <a href="admin/index.php" style="margin-left: 10px;">管理后台</a>
-                    <?php endif; ?>
-                    <a href="logout.php" style="margin-left: 10px; color: #fa7d3c;">退出</a>
+                <?php endif; ?>
+                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                    <a class="x-nav-item" href="admin/index.php">
+                        <i class="fas fa-crown"></i>
+                        <span>管理后台</span>
+                    </a>
+                <?php endif; ?>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <a class="x-nav-item" href="logout.php">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>退出</span>
+                    </a>
                 <?php else: ?>
-                    <a href="login.php">登录</a> | <a href="register.php">注册</a>
+                    <a class="x-nav-item" href="login.php">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>登录</span>
+                    </a>
+                    <a class="x-nav-item" href="register.php">
+                        <i class="far fa-edit"></i>
+                        <span>注册</span>
+                    </a>
+                <?php endif; ?>
+            </nav>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <a href="profile.php?id=<?php echo $nav_user_id; ?>" class="x-user-card">
+                    <img src="<?php echo h($nav_user_avatar); ?>"
+                        alt="头像"
+                        class="x-user-avatar"
+                        onerror="this.src='https://via.placeholder.com/50?text=User'">
+                    <div class="x-user-meta">
+                        <span class="x-user-name"><?php echo h($nav_user_name); ?></span>
+                        <span class="x-user-handle">#<?php echo h($nav_user_id); ?></span>
+                    </div>
+                </a>
+            <?php endif; ?>
+        </aside>
+
+        <main class="x-feed">
+            <div class="x-feed-header">
+                <div class="x-feed-title">
+                    <h2>主页</h2>
+                    <span>为你呈现最新动态</span>
+                </div>
+                <?php if (isset($_GET['q']) && trim($_GET['q']) !== ''): ?>
+                    <span class="x-feed-tag">搜索：<?php echo h($_GET['q']); ?></span>
                 <?php endif; ?>
             </div>
-        </div>
-    </nav>
-
-    <div class="container">
-        <!-- 左侧/主体内容 -->
-        <div class="main-content">
 
             <!-- 发布框 (仅登录可见) -->
             <?php if (isset($_SESSION['user_id'])): ?>
-                <div class="card">
+                <div class="x-compose">
                     <div class="publish-box">
-                        <p>有什么新鲜事想告诉大家？</p>
+                        <p class="x-compose-title">有什么新鲜事想告诉大家？</p>
                         <textarea id="weibo-content" rows="3" placeholder="分享你的想法..."></textarea>
                         <div class="publish-tools">
                             <label class="upload-label">
@@ -81,7 +137,7 @@ $posts = $stmt->fetchAll();
                             </label>
                             <span class="upload-tip">支持 JPG/PNG/GIF/WebP，单张5MB以内</span>
                         </div>
-                        <div style="margin-top: 10px; text-align: right;">
+                        <div class="publish-actions">
                             <button id="publish-btn" class="btn">发布</button>
                         </div>
                     </div>
@@ -89,12 +145,12 @@ $posts = $stmt->fetchAll();
             <?php endif; ?>
 
             <!-- 微博列表 -->
-            <div class="card">
+            <div class="x-feed-list">
                 <?php if (empty($posts)): ?>
-                    <p style="text-align: center; color: #999;">暂时没有内容</p>
+                    <div class="x-empty-state">暂时没有内容</div>
                 <?php else: ?>
                     <?php foreach ($posts as $post): ?>
-                        <div class="weibo-item">
+                        <article class="weibo-item">
                             <div class="weibo-header">
                                 <!-- 头像链接 -->
                                 <a href="profile.php?id=<?php echo $post['user_id']; ?>">
@@ -173,31 +229,36 @@ $posts = $stmt->fetchAll();
                                     <?php endforeach; ?>
                                 </div>
                             </div>
-                        </div>
+                        </article>
                     <?php endforeach; ?>
                 <?php endif; ?>
             </div>
-        </div>
+        </main>
 
-        <!-- 右侧侧边栏 -->
-        <div class="sidebar">
-            <div class="card">
+        <aside class="x-rightbar">
+            <div class="x-search-card">
+                <form action="index.php" method="GET" class="x-search-form">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="q" placeholder="搜索微博..." value="<?php echo isset($_GET['q']) ? h($_GET['q']) : ''; ?>" class="x-search-input">
+                </form>
+            </div>
+            <div class="card x-trends-card">
                 <h3>热门话题</h3>
-                <ul style="padding-left: 20px; color: #fa7d3c;">
+                <ul class="x-trend-list">
                     <li>#HTML5课程设计#</li>
                     <li>#Web开发#</li>
                     <li>#PHP是世界上最好的语言#</li>
                 </ul>
             </div>
-            <div class="card">
+            <div class="card x-about-card">
                 <h3>关于系统</h3>
-                <p style="font-size: 12px; color: #666;">
+                <p class="x-about-text">
                     这是一个基于 PHP + MySQL 的简易微博系统。<br>
                     包含了发布、点赞、评论、搜索等核心功能。<br>
                     后台可进行用户与内容管理。
                 </p>
             </div>
-        </div>
+        </aside>
     </div>
 
     <script src="assets/js/main.js"></script>
