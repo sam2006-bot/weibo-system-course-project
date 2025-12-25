@@ -29,8 +29,13 @@ function h($string)
 function time_ago($datetime)
 {
     $time = strtotime($datetime);
+    if ($time === false) {
+        return '';
+    }
     $diff = time() - $time;
 
+    // Guard against future timestamps (often caused by timezone mismatch).
+    if ($diff < 0) return date('Y-m-d H:i', $time);
     if ($diff < 60) return '刚刚';
     if ($diff < 3600) return floor($diff / 60) . '分钟前';
     if ($diff < 86400) return floor($diff / 3600) . '小时前';
