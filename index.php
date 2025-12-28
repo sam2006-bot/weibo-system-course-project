@@ -82,12 +82,7 @@ if ($current_user) {
                         <span>管理后台</span>
                     </a>
                 <?php endif; ?>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <a class="x-nav-item" href="logout.php">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>退出</span>
-                    </a>
-                <?php else: ?>
+                <?php if (!isset($_SESSION['user_id'])): ?>
                     <a class="x-nav-item" href="login.php">
                         <i class="fas fa-sign-in-alt"></i>
                         <span>登录</span>
@@ -99,16 +94,30 @@ if ($current_user) {
                 <?php endif; ?>
             </nav>
             <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="profile.php?id=<?php echo $nav_user_id; ?>" class="x-user-card">
-                    <img src="<?php echo h($nav_user_avatar); ?>"
-                        alt="头像"
-                        class="x-user-avatar"
-                        onerror="this.src='https://via.placeholder.com/50?text=User'">
-                    <div class="x-user-meta">
-                        <span class="x-user-name"><?php echo h($nav_user_name); ?></span>
-                        <span class="x-user-handle">#<?php echo h($nav_user_id); ?></span>
+                <div class="x-user-menu" data-user-menu>
+                    <button type="button" class="x-user-card x-user-menu-trigger" data-user-menu-trigger aria-expanded="false" aria-haspopup="true" aria-controls="user-menu-panel" aria-label="打开用户菜单">
+                        <img src="<?php echo h($nav_user_avatar); ?>"
+                            alt="头像"
+                            class="x-user-avatar"
+                            onerror="this.src='https://via.placeholder.com/50?text=User'">
+                        <div class="x-user-meta">
+                            <span class="x-user-name"><?php echo h($nav_user_name); ?></span>
+                            <span class="x-user-handle">#<?php echo h($nav_user_id); ?></span>
+                        </div>
+                        <i class="fas fa-ellipsis-h x-user-menu-icon" aria-hidden="true"></i>
+                    </button>
+                    <div class="x-user-menu-panel" data-user-menu-panel id="user-menu-panel" role="menu" aria-label="用户菜单" hidden>
+                        <div class="x-user-menu-header">
+                            <span class="x-user-menu-name"><?php echo h($nav_user_name); ?></span>
+                            <span class="x-user-menu-handle">#<?php echo h($nav_user_id); ?></span>
+                        </div>
+                        <div class="x-user-menu-divider"></div>
+                        <a href="logout.php" class="x-user-menu-item" role="menuitem">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>登出</span>
+                        </a>
                     </div>
-                </a>
+                </div>
             <?php endif; ?>
         </aside>
 

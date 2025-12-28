@@ -141,4 +141,50 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // 5. 侧边栏用户菜单 (首页)
+    const userMenu = document.querySelector('[data-user-menu]');
+    if (userMenu) {
+        const trigger = userMenu.querySelector('[data-user-menu-trigger]');
+        const panel = userMenu.querySelector('[data-user-menu-panel]');
+
+        if (trigger && panel) {
+            const setMenuOpen = (open) => {
+                userMenu.classList.toggle('is-open', open);
+                trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+                panel.hidden = !open;
+                if (!open && userMenu.contains(document.activeElement)) {
+                    document.activeElement.blur();
+                }
+            };
+
+            setMenuOpen(false);
+
+            trigger.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                const isOpen = !userMenu.classList.contains('is-open');
+                setMenuOpen(isOpen);
+            });
+
+            panel.addEventListener('click', function(event) {
+                const menuItem = event.target.closest('a');
+                if (menuItem) {
+                    setMenuOpen(false);
+                }
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!userMenu.contains(event.target)) {
+                    setMenuOpen(false);
+                }
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    setMenuOpen(false);
+                }
+            });
+        }
+    }
 });
