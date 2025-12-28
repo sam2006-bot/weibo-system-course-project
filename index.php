@@ -73,7 +73,7 @@ if ($current_user) {
                 <?php if (isset($_SESSION['user_id'])): ?>
                     <a class="x-nav-item" href="profile.php?id=<?php echo $nav_user_id; ?>">
                         <i class="far fa-user"></i>
-                        <span>个人主页</span>
+                        <span>个人资料</span>
                     </a>
                 <?php endif; ?>
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
@@ -107,11 +107,6 @@ if ($current_user) {
                         <i class="fas fa-ellipsis-h x-user-menu-icon" aria-hidden="true"></i>
                     </button>
                     <div class="x-user-menu-panel" data-user-menu-panel id="user-menu-panel" role="menu" aria-label="用户菜单" hidden>
-                        <div class="x-user-menu-header">
-                            <span class="x-user-menu-name"><?php echo h($nav_user_name); ?></span>
-                            <span class="x-user-menu-handle">#<?php echo h($nav_user_id); ?></span>
-                        </div>
-                        <div class="x-user-menu-divider"></div>
                         <a href="logout.php" class="x-user-menu-item" role="menuitem">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>登出</span>
