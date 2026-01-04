@@ -187,4 +187,43 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // 6. 头像上传 (个人资料视图)
+    const avatarInput = document.getElementById('avatar-input');
+    if (avatarInput) {
+        avatarInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('avatar', file);
+
+            const img = document.getElementById('profile-avatar-img');
+            if (!img) return;
+
+            const oldSrc = img.src;
+            img.style.opacity = '0.5';
+
+            fetch('api/upload_avatar.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    img.style.opacity = '1';
+                    if (data.success) {
+                        img.src = data.avatar_url;
+                        alert('头像更换成功！');
+                    } else {
+                        alert(data.message || '上传失败');
+                        img.src = oldSrc;
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('网络错误');
+                    img.style.opacity = '1';
+                });
+        });
+    }
 });

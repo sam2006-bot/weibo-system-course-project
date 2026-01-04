@@ -2,12 +2,41 @@
 require_once 'includes/db_connect.php';
 require_once 'includes/functions.php';
 
+// 是否进入个人资料视图
+$profile_user_id = 0;
+if (isset($_GET['profile_id'])) {
+    $profile_user_id = intval($_GET['profile_id']);
+} elseif (isset($_GET['id'])) {
+    $profile_user_id = intval($_GET['id']);
+}
+$in_profile_view = $profile_user_id > 0;
+$profile_user = null;
+$profile_error = '';
+if ($in_profile_view) {
+    $stmt_profile = $pdo->prepare("SELECT id, username, avatar, created_at FROM users WHERE id = ?");
+    $stmt_profile->execute([$profile_user_id]);
+    $profile_user = $stmt_profile->fetch();
+    if (!$profile_user) {
+        $profile_error = '用户不存在';
+    }
+}
+
 // 处理搜索
 $whereClause = "";
 $params = [];
+$keyword = '';
 if (isset($_GET['q'])) {
     $keyword = trim($_GET['q']);
-    $whereClause = "WHERE content LIKE ?";
+}
+if ($in_profile_view) {
+    $whereClause = "WHERE p.user_id = ?";
+    $params[] = $profile_user_id;
+    if ($keyword !== '') {
+        $whereClause .= " AND p.content LIKE ?";
+        $params[] = "%$keyword%";
+    }
+} elseif ($keyword !== '') {
+    $whereClause = "WHERE p.content LIKE ?";
     $params[] = "%$keyword%";
 }
 
@@ -24,6 +53,11 @@ $sql = "SELECT p.*, u.username, u.avatar,
 $stmt = $pdo->prepare($sql);
 $stmt->execute(array_merge([$current_user_id], $params));
 $posts = $stmt->fetchAll();
+
+$total_likes = 0;
+if ($in_profile_view && !empty($posts)) {
+    $total_likes = array_sum(array_column($posts, 'like_count'));
+}
 
 $current_user = null;
 if (isset($_SESSION['user_id'])) {
@@ -45,6 +79,11 @@ if ($current_user) {
         $nav_user_avatar = $current_user['avatar'];
     }
 }
+$is_own_profile = $in_profile_view && isset($_SESSION['user_id']) && $_SESSION['user_id'] == $profile_user_id;
+$empty_state_message = $in_profile_view ? '这个人很懒，什么都没写。' : '暂时没有内容';
+if ($profile_error !== '') {
+    $empty_state_message = $profile_error;
+}
 ?>
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -58,7 +97,7 @@ if ($current_user) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
-<body class="home-body">
+<body class="home-body<?php echo $in_profile_view ? ' profile-view' : ''; ?>">
 
     <div class="x-shell">
         <aside class="x-sidebar">
@@ -66,12 +105,12 @@ if ($current_user) {
                 <i class="fab fa-weibo"></i>
             </a>
             <nav class="x-nav">
-                <a class="x-nav-item active" href="index.php">
+                <a class="x-nav-item <?php echo $in_profile_view ? '' : 'active'; ?>" href="index.php">
                     <i class="fas fa-home"></i>
                     <span>主页</span>
                 </a>
                 <?php if (isset($_SESSION['user_id'])): ?>
-                    <a class="x-nav-item" href="profile.php?id=<?php echo $nav_user_id; ?>">
+                    <a class="x-nav-item <?php echo $in_profile_view ? 'active' : ''; ?>" href="index.php?profile_id=<?php echo $nav_user_id; ?>">
                         <i class="far fa-user"></i>
                         <span>个人资料</span>
                     </a>
@@ -118,17 +157,27 @@ if ($current_user) {
 
         <main class="x-feed">
             <div class="x-feed-header">
-                <div class="x-feed-title">
-                    <h2>主页</h2>
-                    <span>为你呈现最新动态</span>
+                <div class="x-feed-title<?php echo $in_profile_view ? ' is-profile' : ''; ?>">
+                    <?php if ($in_profile_view): ?>
+                        <a href="index.php" class="x-back-link" aria-label="返回主页">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <div class="x-profile-title-text">
+                            <h2><?php echo $profile_user ? h($profile_user['username']) : '个人资料'; ?></h2>
+                            <span>共 <?php echo count($posts); ?> 条</span>
+                        </div>
+                    <?php else: ?>
+                        <h2>主页</h2>
+                        <span>为你呈现最新动态</span>
+                    <?php endif; ?>
                 </div>
-                <?php if (isset($_GET['q']) && trim($_GET['q']) !== ''): ?>
-                    <span class="x-feed-tag">搜索：<?php echo h($_GET['q']); ?></span>
+                <?php if ($keyword !== ''): ?>
+                    <span class="x-feed-tag">搜索：<?php echo h($keyword); ?></span>
                 <?php endif; ?>
             </div>
 
             <!-- 发布框 (仅登录可见) -->
-            <?php if (isset($_SESSION['user_id'])): ?>
+            <?php if (isset($_SESSION['user_id']) && !$in_profile_view): ?>
                 <div class="x-compose">
                     <div class="publish-box">
                         <p class="x-compose-title">有什么新鲜事想告诉大家？</p>
@@ -150,21 +199,70 @@ if ($current_user) {
 
             <!-- 微博列表 -->
             <div class="x-feed-list">
+                <?php if ($in_profile_view && $profile_user): ?>
+                    <section class="x-profile-hero profile-header">
+                        <div class="profile-banner">
+                            <div class="profile-banner-content">
+                                <span class="profile-badge">个人主页</span>
+                            </div>
+                        </div>
+                        <div class="profile-header-content">
+                            <div class="profile-avatar-container">
+                                <img src="<?php echo $profile_user['avatar'] ? h($profile_user['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                    alt="头像" class="profile-avatar-large" id="profile-avatar-img"
+                                    onerror="this.src='https://via.placeholder.com/100?text=User'">
+
+                                <?php if ($is_own_profile): ?>
+                                    <div class="avatar-upload-overlay" onclick="document.getElementById('avatar-input').click()">
+                                        <i class="fas fa-camera"></i> 更换
+                                    </div>
+                                    <input type="file" id="avatar-input" style="display: none;" accept="image/*">
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="profile-info">
+                                <div class="profile-title-row">
+                                    <h2><?php echo h($profile_user['username']); ?></h2>
+                                    <span class="profile-handle">#<?php echo $profile_user['id']; ?></span>
+                                </div>
+                                <p class="profile-bio">这里是 <?php echo h($profile_user['username']); ?> 的个人空间。</p>
+                                <div class="profile-meta">
+                                    <span><i class="fas fa-calendar-alt"></i> 加入时间：<?php echo date('Y年m月d日', strtotime($profile_user['created_at'])); ?></span>
+                                    <span><i class="fas fa-hashtag"></i> 用户ID：<?php echo $profile_user['id']; ?></span>
+                                    <span><i class="fas fa-heart"></i> 获赞：<?php echo $total_likes; ?></span>
+                                </div>
+                                <div class="profile-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-value"><?php echo count($posts); ?></span>
+                                        <span class="stat-label">微博</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-value"><?php echo $total_likes; ?></span>
+                                        <span class="stat-label">获赞</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="x-profile-tabs">
+                            <button class="x-profile-tab active" type="button">帖子</button>
+                        </div>
+                    </section>
+                <?php endif; ?>
                 <?php if (empty($posts)): ?>
-                    <div class="x-empty-state">暂时没有内容</div>
+                    <div class="x-empty-state"><?php echo h($empty_state_message); ?></div>
                 <?php else: ?>
                     <?php foreach ($posts as $post): ?>
                         <article class="weibo-item">
                             <div class="weibo-header">
                                 <!-- 头像链接 -->
-                                <a href="profile.php?id=<?php echo $post['user_id']; ?>">
+                                <a href="index.php?profile_id=<?php echo $post['user_id']; ?>">
                                     <img src="<?php echo $post['avatar'] ? h($post['avatar']) : 'assets/images/default-avatar.png'; ?>"
                                         class="avatar"
                                         onerror="this.src='https://via.placeholder.com/50?text=User'">
                                 </a>
                                 <div class="user-info">
                                     <!-- 用户名链接 -->
-                                    <a href="profile.php?id=<?php echo $post['user_id']; ?>" class="username-link">
+                                    <a href="index.php?profile_id=<?php echo $post['user_id']; ?>" class="username-link">
                                         <span class="username"><?php echo h($post['username']); ?></span>
                                     </a>
                                     <span class="time"><?php echo time_ago($post['created_at']); ?></span>
@@ -243,7 +341,7 @@ if ($current_user) {
             <div class="x-search-card">
                 <form action="index.php" method="GET" class="x-search-form">
                     <i class="fas fa-search"></i>
-                    <input type="text" name="q" placeholder="搜索微博..." value="<?php echo isset($_GET['q']) ? h($_GET['q']) : ''; ?>" class="x-search-input">
+                    <input type="text" name="q" placeholder="搜索微博..." value="<?php echo h($keyword); ?>" class="x-search-input">
                 </form>
             </div>
             <div class="card x-trends-card">
