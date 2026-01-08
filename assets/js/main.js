@@ -94,7 +94,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 3. 评论展开/收起
+    // 3. 关注功能
+    document.querySelectorAll('[data-follow-btn]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            if (!userId) return;
+
+            const wasFollowing = this.classList.contains('is-following');
+            const setFollowState = (isFollowing) => {
+                this.classList.toggle('is-following', isFollowing);
+                this.setAttribute('aria-pressed', isFollowing ? 'true' : 'false');
+                this.textContent = isFollowing ? '已关注' : '关注';
+            };
+
+            this.disabled = true;
+            this.textContent = wasFollowing ? '取消中...' : '关注中...';
+
+            fetch('api/follow_user.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `user_id=${encodeURIComponent(userId)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    setFollowState(!!data.is_following);
+                } else {
+                    if (data.message === '请先登录') {
+                        window.location.href = 'login.php';
+                        return;
+                    }
+                    alert(data.message || '操作失败');
+                    setFollowState(wasFollowing);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('网络错误');
+                setFollowState(wasFollowing);
+            })
+            .finally(() => {
+                this.disabled = false;
+            });
+        });
+    });
+
+    // 4. 评论展开/收起
     document.querySelectorAll('.comment-toggle-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const postId = this.dataset.id;
@@ -108,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 4. 发表评论 (Ajax)
+    // 5. 发表评论 (Ajax)
     document.querySelectorAll('.submit-comment-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const postId = this.dataset.id;
@@ -142,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 5. 侧边栏用户菜单 (首页)
+    // 6. 侧边栏用户菜单 (首页)
     const userMenu = document.querySelector('[data-user-menu]');
     if (userMenu) {
         const trigger = userMenu.querySelector('[data-user-menu-trigger]');
@@ -188,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 6. 头像上传 (个人资料视图)
+    // 7. 头像上传 (个人资料视图)
     const avatarInput = document.getElementById('avatar-input');
     if (avatarInput) {
         avatarInput.addEventListener('change', function() {

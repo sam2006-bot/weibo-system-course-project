@@ -28,6 +28,11 @@ $keyword = '';
 if (isset($_GET['q'])) {
     $keyword = trim($_GET['q']);
 }
+$current_user_id = $_SESSION['user_id'] ?? 0;
+$feed = 'for-you';
+if (isset($_GET['feed']) && $_GET['feed'] === 'following') {
+    $feed = 'following';
+}
 if ($in_profile_view) {
     $whereClause = "WHERE p.user_id = ?";
     $params[] = $profile_user_id;
@@ -35,13 +40,25 @@ if ($in_profile_view) {
         $whereClause .= " AND p.content LIKE ?";
         $params[] = "%$keyword%";
     }
-} elseif ($keyword !== '') {
-    $whereClause = "WHERE p.content LIKE ?";
-    $params[] = "%$keyword%";
+} else {
+    if ($feed === 'following') {
+        if ($current_user_id > 0) {
+            $whereClause = "WHERE p.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?)";
+            $params[] = $current_user_id;
+            if ($keyword !== '') {
+                $whereClause .= " AND p.content LIKE ?";
+                $params[] = "%$keyword%";
+            }
+        } else {
+            $whereClause = "WHERE 1=0";
+        }
+    } elseif ($keyword !== '') {
+        $whereClause = "WHERE p.content LIKE ?";
+        $params[] = "%$keyword%";
+    }
 }
 
 // 获取微博列表 (联表查询：包含用户信息、点赞数、当前用户是否点赞)
-$current_user_id = $_SESSION['user_id'] ?? 0;
 $sql = "SELECT p.*, u.username, u.avatar, 
         (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
         (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) as is_liked
@@ -80,7 +97,16 @@ if ($current_user) {
     }
 }
 $is_own_profile = $in_profile_view && isset($_SESSION['user_id']) && $_SESSION['user_id'] == $profile_user_id;
+$is_following = false;
+if ($in_profile_view && $profile_user && !$is_own_profile && isset($_SESSION['user_id'])) {
+    $stmt_follow = $pdo->prepare("SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ? LIMIT 1");
+    $stmt_follow->execute([$_SESSION['user_id'], $profile_user_id]);
+    $is_following = (bool)$stmt_follow->fetchColumn();
+}
 $empty_state_message = $in_profile_view ? '这个人很懒，什么都没写。' : '暂时没有内容';
+if (!$in_profile_view && $feed === 'following') {
+    $empty_state_message = $current_user_id > 0 ? '关注的人暂时没有内容' : '登录后查看关注用户的动态';
+}
 if ($profile_error !== '') {
     $empty_state_message = $profile_error;
 }
@@ -156,7 +182,7 @@ if ($profile_error !== '') {
         </aside>
 
         <main class="x-feed">
-            <div class="x-feed-header">
+            <div class="x-feed-header<?php echo $in_profile_view ? '' : ' is-home'; ?>">
                 <div class="x-feed-title<?php echo $in_profile_view ? ' is-profile' : ''; ?>">
                     <?php if ($in_profile_view): ?>
                         <a href="index.php" class="x-back-link" aria-label="返回主页">
@@ -167,8 +193,16 @@ if ($profile_error !== '') {
                             <span>共 <?php echo count($posts); ?> 条</span>
                         </div>
                     <?php else: ?>
-                        <h2>主页</h2>
-                        <span>为你呈现最新动态</span>
+                        <div class="x-home-tabs" role="tablist" aria-label="主页内容切换">
+                            <a class="x-home-tab <?php echo $feed === 'for-you' ? 'active' : ''; ?>"
+                                href="index.php?feed=for-you<?php echo $keyword !== '' ? '&q=' . urlencode($keyword) : ''; ?>">
+                                为你推荐
+                            </a>
+                            <a class="x-home-tab <?php echo $feed === 'following' ? 'active' : ''; ?>"
+                                href="index.php?feed=following<?php echo $keyword !== '' ? '&q=' . urlencode($keyword) : ''; ?>">
+                                正在关注
+                            </a>
+                        </div>
                     <?php endif; ?>
                 </div>
                 <?php if ($keyword !== ''): ?>
@@ -206,16 +240,29 @@ if ($profile_error !== '') {
                             </div>
                         </div>
                         <div class="profile-header-content">
-                            <div class="profile-avatar-container">
-                                <img src="<?php echo $profile_user['avatar'] ? h($profile_user['avatar']) : 'assets/images/default-avatar.png'; ?>"
-                                    alt="头像" class="profile-avatar-large" id="profile-avatar-img"
-                                    onerror="this.src='https://via.placeholder.com/100?text=User'">
+                            <div class="profile-header-top">
+                                <div class="profile-avatar-container">
+                                    <img src="<?php echo $profile_user['avatar'] ? h($profile_user['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                        alt="头像" class="profile-avatar-large" id="profile-avatar-img"
+                                        onerror="this.src='https://via.placeholder.com/100?text=User'">
 
-                                <?php if ($is_own_profile): ?>
-                                    <div class="avatar-upload-overlay" onclick="document.getElementById('avatar-input').click()">
-                                        <i class="fas fa-camera"></i> 更换
+                                    <?php if ($is_own_profile): ?>
+                                        <div class="avatar-upload-overlay" onclick="document.getElementById('avatar-input').click()">
+                                            <i class="fas fa-camera"></i> 更换
+                                        </div>
+                                        <input type="file" id="avatar-input" style="display: none;" accept="image/*">
+                                    <?php endif; ?>
+                                </div>
+                                <?php if (!$is_own_profile): ?>
+                                    <div class="profile-actions">
+                                        <button type="button"
+                                            class="x-follow-btn<?php echo $is_following ? ' is-following' : ''; ?>"
+                                            data-follow-btn
+                                            data-user-id="<?php echo $profile_user['id']; ?>"
+                                            aria-pressed="<?php echo $is_following ? 'true' : 'false'; ?>">
+                                            <?php echo $is_following ? '已关注' : '关注'; ?>
+                                        </button>
                                     </div>
-                                    <input type="file" id="avatar-input" style="display: none;" accept="image/*">
                                 <?php endif; ?>
                             </div>
 
@@ -340,6 +387,9 @@ if ($profile_error !== '') {
             <div class="x-search-card">
                 <form action="index.php" method="GET" class="x-search-form">
                     <i class="fas fa-search"></i>
+                    <?php if (!$in_profile_view && $feed === 'following'): ?>
+                        <input type="hidden" name="feed" value="following">
+                    <?php endif; ?>
                     <input type="text" name="q" placeholder="搜索微博..." value="<?php echo h($keyword); ?>" class="x-search-input">
                 </form>
             </div>

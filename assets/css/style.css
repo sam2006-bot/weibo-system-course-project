@@ -1003,6 +1003,66 @@ body.home-body {
     background: rgba(255, 255, 255, 0.94);
 }
 
+.x-feed-header.is-home {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    border-bottom: none;
+    background: transparent;
+}
+
+.x-feed-header.is-home .x-feed-title {
+    width: 100%;
+}
+
+.x-home-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+    border-bottom: 1px solid var(--home-border);
+    background: rgba(255, 255, 255, 0.96);
+}
+
+.x-home-tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--home-muted);
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.x-home-tab:hover {
+    color: #0f121a;
+    background: rgba(15, 18, 26, 0.04);
+}
+
+.x-home-tab.active {
+    color: #0f121a;
+    font-weight: 700;
+}
+
+.x-home-tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42%;
+    height: 4px;
+    background: #fa7d3c;
+    border-radius: 999px;
+}
+
+.x-feed-header.is-home .x-feed-tag {
+    align-self: flex-end;
+    margin: 10px 16px 0;
+}
+
 .x-feed-title {
     display: flex;
     flex-direction: column;
@@ -1144,6 +1204,15 @@ body.profile-view .stat-label {
     margin-left: auto;
     display: flex;
     align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.profile-header-top {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    width: 100%;
 }
 
 .x-profile-edit-btn {
@@ -1160,6 +1229,40 @@ body.profile-view .stat-label {
 .x-profile-edit-btn:hover {
     background: rgba(250, 125, 60, 0.12);
     transform: translateY(-1px);
+}
+
+.x-follow-btn {
+    border: 1px solid var(--primary-color);
+    background: var(--primary-color);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.x-follow-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(15, 18, 26, 0.2);
+}
+
+.x-follow-btn.is-following {
+    background: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.x-follow-btn.is-following:hover {
+    background: transparent;
+    box-shadow: 0 8px 16px rgba(250, 125, 60, 0.18);
+}
+
+.x-follow-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+    transform: none;
 }
 
 .x-profile-tabs {
@@ -1485,6 +1588,19 @@ body.home-body .card {
     .x-compose,
     body.home-body .weibo-item {
         padding: 14px 16px;
+    }
+
+    .x-feed-header.is-home {
+        padding: 0;
+    }
+
+    .x-home-tab {
+        padding: 14px 0;
+        font-size: 15px;
+    }
+
+    .x-feed-header.is-home .x-feed-tag {
+        margin: 8px 12px 0;
     }
 
     body.profile-view .profile-header-content {
