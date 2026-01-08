@@ -184,7 +184,7 @@ if ($profile_error !== '') {
                         <textarea id="weibo-content" rows="3" placeholder="分享你的想法..."></textarea>
                         <div class="publish-tools">
                             <label class="upload-label">
-                                <i class="far fa-image"></i> 图片(最多9张)
+                                <i class="far fa-image"></i> 图片
                                 <!-- 修改：添加 multiple 属性支持多选 -->
                                 <input type="file" id="weibo-image" accept="image/*" multiple>
                             </label>
