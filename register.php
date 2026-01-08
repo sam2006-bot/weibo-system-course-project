@@ -32,8 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } else {
             // 注册
             $hash = password_hash($password, PASSWORD_DEFAULT);
-            $stmt = $pdo->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-            if ($stmt->execute([$username_val, $hash])) {
+            $default_avatar = DEFAULT_AVATAR_PATH;
+            $stmt = $pdo->prepare("INSERT INTO users (username, password, avatar) VALUES (?, ?, ?)");
+            if ($stmt->execute([$username_val, $hash, $default_avatar])) {
                 header("Location: login.php?registered=1");
                 exit;
             } else {

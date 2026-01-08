@@ -90,7 +90,7 @@ if (isset($_SESSION['user_id'])) {
 }
 $nav_user_name = $_SESSION['username'] ?? '';
 $nav_user_id = $_SESSION['user_id'] ?? 0;
-$nav_user_avatar = 'assets/images/default-avatar.png';
+$nav_user_avatar = DEFAULT_AVATAR_PATH;
 if ($current_user) {
     if (!empty($current_user['username'])) {
         $nav_user_name = $current_user['username'];
@@ -190,7 +190,7 @@ if (!$show_recommend) {
                         <img src="<?php echo h($nav_user_avatar); ?>"
                             alt="头像"
                             class="x-user-avatar"
-                            onerror="this.src='https://via.placeholder.com/50?text=User'">
+                            onerror="this.src='<?php echo h(DEFAULT_AVATAR_PATH); ?>'">
                         <div class="x-user-meta">
                             <span class="x-user-name"><?php echo h($nav_user_name); ?></span>
                             <span class="x-user-handle">#<?php echo h($nav_user_id); ?></span>
@@ -274,7 +274,7 @@ if (!$show_recommend) {
                             <?php foreach ($recommend_users as $user): ?>
                                 <article class="x-recommend-item">
                                     <a href="index.php?profile_id=<?php echo $user['id']; ?>" class="x-recommend-avatar">
-                                        <img src="<?php echo $user['avatar'] ? h($user['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                        <img src="<?php echo $user['avatar'] ? h($user['avatar']) : h(DEFAULT_AVATAR_PATH); ?>"
                                             alt="头像"
                                             onerror="this.src='https://via.placeholder.com/50?text=User'">
                                     </a>
@@ -306,7 +306,7 @@ if (!$show_recommend) {
                             <div class="profile-header-content">
                                 <div class="profile-header-top">
                                     <div class="profile-avatar-container">
-                                        <img src="<?php echo $profile_user['avatar'] ? h($profile_user['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                        <img src="<?php echo $profile_user['avatar'] ? h($profile_user['avatar']) : h(DEFAULT_AVATAR_PATH); ?>"
                                             alt="头像" class="profile-avatar-large" id="profile-avatar-img"
                                             onerror="this.src='https://via.placeholder.com/100?text=User'">
 
@@ -366,7 +366,7 @@ if (!$show_recommend) {
                                 <div class="weibo-header">
                                     <!-- 头像链接 -->
                                     <a href="index.php?profile_id=<?php echo $post['user_id']; ?>">
-                                        <img src="<?php echo $post['avatar'] ? h($post['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                        <img src="<?php echo $post['avatar'] ? h($post['avatar']) : h(DEFAULT_AVATAR_PATH); ?>"
                                             class="avatar"
                                             onerror="this.src='https://via.placeholder.com/50?text=User'">
                                     </a>

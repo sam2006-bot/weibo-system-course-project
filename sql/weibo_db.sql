@@ -21,7 +21,7 @@ CREATE TABLE `users` (
     `username` VARCHAR(50) NOT NULL,
     `password` VARCHAR(255) NOT NULL,
     `role` ENUM('user', 'admin') NOT NULL DEFAULT 'user',
-    `avatar` VARCHAR(255) DEFAULT NULL,
+    `avatar` VARCHAR(255) DEFAULT 'assets/images/default-avatar.svg',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_users_username` (`username`)
