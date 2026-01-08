@@ -33,43 +33,49 @@ $feed = 'for-you';
 if (isset($_GET['feed']) && $_GET['feed'] === 'following') {
     $feed = 'following';
 }
-if ($in_profile_view) {
-    $whereClause = "WHERE p.user_id = ?";
-    $params[] = $profile_user_id;
-    if ($keyword !== '') {
-        $whereClause .= " AND p.content LIKE ?";
-        $params[] = "%$keyword%";
-    }
-} else {
-    if ($feed === 'following') {
-        if ($current_user_id > 0) {
-            $whereClause = "WHERE p.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?)";
-            $params[] = $current_user_id;
-            if ($keyword !== '') {
-                $whereClause .= " AND p.content LIKE ?";
-                $params[] = "%$keyword%";
-            }
-        } else {
-            $whereClause = "WHERE 1=0";
+$show_recommend = !$in_profile_view && isset($_GET['view']) && $_GET['view'] === 'follow';
+$is_home_feed = !$in_profile_view && !$show_recommend;
+
+$posts = [];
+if (!$show_recommend) {
+    if ($in_profile_view) {
+        $whereClause = "WHERE p.user_id = ?";
+        $params[] = $profile_user_id;
+        if ($keyword !== '') {
+            $whereClause .= " AND p.content LIKE ?";
+            $params[] = "%$keyword%";
         }
-    } elseif ($keyword !== '') {
-        $whereClause = "WHERE p.content LIKE ?";
-        $params[] = "%$keyword%";
+    } else {
+        if ($feed === 'following') {
+            if ($current_user_id > 0) {
+                $whereClause = "WHERE p.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?)";
+                $params[] = $current_user_id;
+                if ($keyword !== '') {
+                    $whereClause .= " AND p.content LIKE ?";
+                    $params[] = "%$keyword%";
+                }
+            } else {
+                $whereClause = "WHERE 1=0";
+            }
+        } elseif ($keyword !== '') {
+            $whereClause = "WHERE p.content LIKE ?";
+            $params[] = "%$keyword%";
+        }
     }
+
+    // 获取微博列表 (联表查询：包含用户信息、点赞数、当前用户是否点赞)
+    $sql = "SELECT p.*, u.username, u.avatar, 
+            (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
+            (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) as is_liked
+            FROM posts p 
+            JOIN users u ON p.user_id = u.id 
+            $whereClause
+            ORDER BY p.created_at DESC";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(array_merge([$current_user_id], $params));
+    $posts = $stmt->fetchAll();
 }
-
-// 获取微博列表 (联表查询：包含用户信息、点赞数、当前用户是否点赞)
-$sql = "SELECT p.*, u.username, u.avatar, 
-        (SELECT COUNT(*) FROM likes WHERE post_id = p.id) as like_count,
-        (SELECT COUNT(*) FROM likes WHERE post_id = p.id AND user_id = ?) as is_liked
-        FROM posts p 
-        JOIN users u ON p.user_id = u.id 
-        $whereClause
-        ORDER BY p.created_at DESC";
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute(array_merge([$current_user_id], $params));
-$posts = $stmt->fetchAll();
 
 $total_likes = 0;
 if ($in_profile_view && !empty($posts)) {
@@ -103,12 +109,28 @@ if ($in_profile_view && $profile_user && !$is_own_profile && isset($_SESSION['us
     $stmt_follow->execute([$_SESSION['user_id'], $profile_user_id]);
     $is_following = (bool)$stmt_follow->fetchColumn();
 }
-$empty_state_message = $in_profile_view ? '这个人很懒，什么都没写。' : '暂时没有内容';
-if (!$in_profile_view && $feed === 'following') {
-    $empty_state_message = $current_user_id > 0 ? '关注的人暂时没有内容' : '登录后查看关注用户的动态';
+
+$recommend_users = [];
+if ($show_recommend && isset($_SESSION['user_id'])) {
+    $stmt_recommend = $pdo->prepare("SELECT u.id, u.username, u.avatar, u.created_at
+        FROM users u
+        WHERE u.id != ?
+          AND u.id NOT IN (SELECT following_id FROM follows WHERE follower_id = ?)
+        ORDER BY RAND()
+        LIMIT 6");
+    $stmt_recommend->execute([$current_user_id, $current_user_id]);
+    $recommend_users = $stmt_recommend->fetchAll();
 }
-if ($profile_error !== '') {
-    $empty_state_message = $profile_error;
+
+$empty_state_message = '';
+if (!$show_recommend) {
+    $empty_state_message = $in_profile_view ? '这个人很懒，什么都没写。' : '暂时没有内容';
+    if (!$in_profile_view && $feed === 'following') {
+        $empty_state_message = $current_user_id > 0 ? '关注的人暂时没有内容' : '登录后查看关注用户的动态';
+    }
+    if ($profile_error !== '') {
+        $empty_state_message = $profile_error;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -131,11 +153,15 @@ if ($profile_error !== '') {
                 <i class="fab fa-weibo"></i>
             </a>
             <nav class="x-nav">
-                <a class="x-nav-item <?php echo $in_profile_view ? '' : 'active'; ?>" href="index.php">
+                <a class="x-nav-item <?php echo (!$in_profile_view && !$show_recommend) ? 'active' : ''; ?>" href="index.php">
                     <i class="fas fa-home"></i>
                     <span>主页</span>
                 </a>
                 <?php if (isset($_SESSION['user_id'])): ?>
+                    <a class="x-nav-item <?php echo $show_recommend ? 'active' : ''; ?>" href="index.php?view=follow">
+                        <i class="fas fa-user-plus"></i>
+                        <span>关注</span>
+                    </a>
                     <a class="x-nav-item <?php echo $in_profile_view ? 'active' : ''; ?>" href="index.php?profile_id=<?php echo $nav_user_id; ?>">
                         <i class="far fa-user"></i>
                         <span>个人资料</span>
@@ -182,7 +208,7 @@ if ($profile_error !== '') {
         </aside>
 
         <main class="x-feed">
-            <div class="x-feed-header<?php echo $in_profile_view ? '' : ' is-home'; ?>">
+            <div class="x-feed-header<?php echo $is_home_feed ? ' is-home' : ''; ?>">
                 <div class="x-feed-title<?php echo $in_profile_view ? ' is-profile' : ''; ?>">
                     <?php if ($in_profile_view): ?>
                         <a href="index.php" class="x-back-link" aria-label="返回主页">
@@ -192,6 +218,9 @@ if ($profile_error !== '') {
                             <h2><?php echo $profile_user ? h($profile_user['username']) : '个人资料'; ?></h2>
                             <span>共 <?php echo count($posts); ?> 条</span>
                         </div>
+                    <?php elseif ($show_recommend): ?>
+                        <h2>推荐关注</h2>
+                        <span>为你推荐的创作者</span>
                     <?php else: ?>
                         <div class="x-home-tabs" role="tablist" aria-label="主页内容切换">
                             <a class="x-home-tab <?php echo $feed === 'for-you' ? 'active' : ''; ?>"
@@ -205,13 +234,13 @@ if ($profile_error !== '') {
                         </div>
                     <?php endif; ?>
                 </div>
-                <?php if ($keyword !== ''): ?>
+                <?php if ($keyword !== '' && !$show_recommend): ?>
                     <span class="x-feed-tag">搜索：<?php echo h($keyword); ?></span>
                 <?php endif; ?>
             </div>
 
             <!-- 发布框 (仅登录可见) -->
-            <?php if (isset($_SESSION['user_id']) && !$in_profile_view): ?>
+            <?php if (isset($_SESSION['user_id']) && !$in_profile_view && !$show_recommend): ?>
                 <div class="x-compose">
                     <div class="publish-box">
                         <p class="x-compose-title">有什么新鲜事想告诉大家？</p>
@@ -233,152 +262,188 @@ if ($profile_error !== '') {
 
             <!-- 微博列表 -->
             <div class="x-feed-list">
-                <?php if ($in_profile_view && $profile_user): ?>
-                    <section class="x-profile-hero profile-header">
-                        <div class="profile-banner">
-                            <div class="profile-banner-content">
-                            </div>
+                <?php if ($show_recommend): ?>
+                    <?php if (!isset($_SESSION['user_id'])): ?>
+                        <div class="x-empty-state">
+                            <a href="login.php">登录</a>后查看推荐关注
                         </div>
-                        <div class="profile-header-content">
-                            <div class="profile-header-top">
-                                <div class="profile-avatar-container">
-                                    <img src="<?php echo $profile_user['avatar'] ? h($profile_user['avatar']) : 'assets/images/default-avatar.png'; ?>"
-                                        alt="头像" class="profile-avatar-large" id="profile-avatar-img"
-                                        onerror="this.src='https://via.placeholder.com/100?text=User'">
+                    <?php elseif (empty($recommend_users)): ?>
+                        <div class="x-empty-state">暂时没有可推荐的用户</div>
+                    <?php else: ?>
+                        <div class="x-recommend-list">
+                            <?php foreach ($recommend_users as $user): ?>
+                                <article class="x-recommend-item">
+                                    <a href="index.php?profile_id=<?php echo $user['id']; ?>" class="x-recommend-avatar">
+                                        <img src="<?php echo $user['avatar'] ? h($user['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                            alt="头像"
+                                            onerror="this.src='https://via.placeholder.com/50?text=User'">
+                                    </a>
+                                    <div class="x-recommend-meta">
+                                        <a href="index.php?profile_id=<?php echo $user['id']; ?>" class="x-recommend-name">
+                                            <?php echo h($user['username']); ?>
+                                        </a>
+                                        <span class="x-recommend-handle">#<?php echo h($user['id']); ?></span>
+                                        <span class="x-recommend-desc">加入时间：<?php echo h(date('Y年m月d日', strtotime($user['created_at']))); ?></span>
+                                    </div>
+                                    <button type="button"
+                                        class="x-follow-btn x-follow-btn--ghost"
+                                        data-follow-btn
+                                        data-user-id="<?php echo $user['id']; ?>"
+                                        aria-pressed="false">
+                                        关注
+                                    </button>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <?php if ($in_profile_view && $profile_user): ?>
+                        <section class="x-profile-hero profile-header">
+                            <div class="profile-banner">
+                                <div class="profile-banner-content">
+                                </div>
+                            </div>
+                            <div class="profile-header-content">
+                                <div class="profile-header-top">
+                                    <div class="profile-avatar-container">
+                                        <img src="<?php echo $profile_user['avatar'] ? h($profile_user['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                            alt="头像" class="profile-avatar-large" id="profile-avatar-img"
+                                            onerror="this.src='https://via.placeholder.com/100?text=User'">
 
-                                    <?php if ($is_own_profile): ?>
-                                        <div class="avatar-upload-overlay" onclick="document.getElementById('avatar-input').click()">
-                                            <i class="fas fa-camera"></i> 更换
+                                        <?php if ($is_own_profile): ?>
+                                            <div class="avatar-upload-overlay" onclick="document.getElementById('avatar-input').click()">
+                                                <i class="fas fa-camera"></i> 更换
+                                            </div>
+                                            <input type="file" id="avatar-input" style="display: none;" accept="image/*">
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if (!$is_own_profile): ?>
+                                        <div class="profile-actions">
+                                            <button type="button"
+                                                class="x-follow-btn<?php echo $is_following ? ' is-following' : ''; ?>"
+                                                data-follow-btn
+                                                data-user-id="<?php echo $profile_user['id']; ?>"
+                                                aria-pressed="<?php echo $is_following ? 'true' : 'false'; ?>">
+                                                <?php echo $is_following ? '已关注' : '关注'; ?>
+                                            </button>
                                         </div>
-                                        <input type="file" id="avatar-input" style="display: none;" accept="image/*">
                                     <?php endif; ?>
                                 </div>
-                                <?php if (!$is_own_profile): ?>
-                                    <div class="profile-actions">
-                                        <button type="button"
-                                            class="x-follow-btn<?php echo $is_following ? ' is-following' : ''; ?>"
-                                            data-follow-btn
-                                            data-user-id="<?php echo $profile_user['id']; ?>"
-                                            aria-pressed="<?php echo $is_following ? 'true' : 'false'; ?>">
-                                            <?php echo $is_following ? '已关注' : '关注'; ?>
-                                        </button>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
 
-                            <div class="profile-info">
-                                <div class="profile-title-row">
-                                    <h2><?php echo h($profile_user['username']); ?></h2>
-                                    <span class="profile-handle">#<?php echo $profile_user['id']; ?></span>
-                                </div>
-                                <p class="profile-bio">这里是 <?php echo h($profile_user['username']); ?> 的个人空间。</p>
-                                <div class="profile-meta">
-                                    <span><i class="fas fa-calendar-alt"></i> 加入时间：<?php echo date('Y年m月d日', strtotime($profile_user['created_at'])); ?></span>
-                                    <span><i class="fas fa-hashtag"></i> 用户ID：<?php echo $profile_user['id']; ?></span>
-                                    <span><i class="fas fa-heart"></i> 获赞：<?php echo $total_likes; ?></span>
-                                </div>
-                                <div class="profile-stats">
-                                    <div class="stat-item">
-                                        <span class="stat-value"><?php echo count($posts); ?></span>
-                                        <span class="stat-label">微博</span>
+                                <div class="profile-info">
+                                    <div class="profile-title-row">
+                                        <h2><?php echo h($profile_user['username']); ?></h2>
+                                        <span class="profile-handle">#<?php echo $profile_user['id']; ?></span>
                                     </div>
-                                    <div class="stat-item">
-                                        <span class="stat-value"><?php echo $total_likes; ?></span>
-                                        <span class="stat-label">获赞</span>
+                                    <p class="profile-bio">这里是 <?php echo h($profile_user['username']); ?> 的个人空间。</p>
+                                    <div class="profile-meta">
+                                        <span><i class="fas fa-calendar-alt"></i> 加入时间：<?php echo date('Y年m月d日', strtotime($profile_user['created_at'])); ?></span>
+                                        <span><i class="fas fa-hashtag"></i> 用户ID：<?php echo $profile_user['id']; ?></span>
+                                        <span><i class="fas fa-heart"></i> 获赞：<?php echo $total_likes; ?></span>
+                                    </div>
+                                    <div class="profile-stats">
+                                        <div class="stat-item">
+                                            <span class="stat-value"><?php echo count($posts); ?></span>
+                                            <span class="stat-label">微博</span>
+                                        </div>
+                                        <div class="stat-item">
+                                            <span class="stat-value"><?php echo $total_likes; ?></span>
+                                            <span class="stat-label">获赞</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="x-profile-tabs">
-                            <button class="x-profile-tab active" type="button">帖子</button>
-                        </div>
-                    </section>
-                <?php endif; ?>
-                <?php if (empty($posts)): ?>
-                    <div class="x-empty-state"><?php echo h($empty_state_message); ?></div>
-                <?php else: ?>
-                    <?php foreach ($posts as $post): ?>
-                        <article class="weibo-item">
-                            <div class="weibo-header">
-                                <!-- 头像链接 -->
-                                <a href="index.php?profile_id=<?php echo $post['user_id']; ?>">
-                                    <img src="<?php echo $post['avatar'] ? h($post['avatar']) : 'assets/images/default-avatar.png'; ?>"
-                                        class="avatar"
-                                        onerror="this.src='https://via.placeholder.com/50?text=User'">
-                                </a>
-                                <div class="user-info">
-                                    <!-- 用户名链接 -->
-                                    <a href="index.php?profile_id=<?php echo $post['user_id']; ?>" class="username-link">
-                                        <span class="username"><?php echo h($post['username']); ?></span>
+                            <div class="x-profile-tabs">
+                                <button class="x-profile-tab active" type="button">帖子</button>
+                            </div>
+                        </section>
+                    <?php endif; ?>
+                    <?php if (empty($posts)): ?>
+                        <div class="x-empty-state"><?php echo h($empty_state_message); ?></div>
+                    <?php else: ?>
+                        <?php foreach ($posts as $post): ?>
+                            <article class="weibo-item">
+                                <div class="weibo-header">
+                                    <!-- 头像链接 -->
+                                    <a href="index.php?profile_id=<?php echo $post['user_id']; ?>">
+                                        <img src="<?php echo $post['avatar'] ? h($post['avatar']) : 'assets/images/default-avatar.png'; ?>"
+                                            class="avatar"
+                                            onerror="this.src='https://via.placeholder.com/50?text=User'">
                                     </a>
-                                    <span class="time"><?php echo time_ago($post['created_at']); ?></span>
+                                    <div class="user-info">
+                                        <!-- 用户名链接 -->
+                                        <a href="index.php?profile_id=<?php echo $post['user_id']; ?>" class="username-link">
+                                            <span class="username"><?php echo h($post['username']); ?></span>
+                                        </a>
+                                        <span class="time"><?php echo time_ago($post['created_at']); ?></span>
+                                    </div>
                                 </div>
-                            </div>
-                            <?php if (!empty(trim($post['content'] ?? ''))): ?>
-                                <div class="weibo-content">
-                                    <?php echo h($post['content']); ?>
-                                </div>
-                            <?php endif; ?>
-
-                            <!-- 图片展示逻辑修改：支持九宫格 -->
-                            <?php
-                            $imgs = [];
-                            $db_path = $post['image_path'] ?? '';
-                            if (!empty($db_path)) {
-                                // 尝试解析 JSON
-                                $json_imgs = json_decode($db_path, true);
-                                if (json_last_error() === JSON_ERROR_NONE && is_array($json_imgs)) {
-                                    $imgs = $json_imgs; // 新格式：多图
-                                } else {
-                                    $imgs = [$db_path]; // 兼容旧格式：单图
-                                }
-                            }
-                            ?>
-                            <?php if (!empty($imgs)): ?>
-                                <div class="weibo-image-grid grid-<?php echo count($imgs); ?>">
-                                    <?php foreach ($imgs as $img_url): ?>
-                                        <div class="grid-item">
-                                            <img src="<?php echo h($img_url); ?>" alt="微博图片" loading="lazy">
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-
-                            <div class="weibo-footer">
-                                <span class="action-btn comment-toggle-btn" data-id="<?php echo $post['id']; ?>">
-                                    <i class="far fa-comment"></i> 评论
-                                </span>
-                                <span class="action-btn like-btn <?php echo $post['is_liked'] ? 'active' : ''; ?>" data-id="<?php echo $post['id']; ?>">
-                                    <i class="far fa-thumbs-up"></i>
-                                    <span class="like-count"><?php echo $post['like_count']; ?></span>
-                                </span>
-                            </div>
-
-                            <!-- 评论区域 (Ajax 加载或预加载) -->
-                            <div class="comments-section" id="comments-<?php echo $post['id']; ?>">
-                                <?php if (isset($_SESSION['user_id'])): ?>
-                                    <div class="comment-input-group">
-                                        <input type="text" class="comment-input" placeholder="写下你的评论...">
-                                        <button class="btn submit-comment-btn" data-id="<?php echo $post['id']; ?>">评论</button>
+                                <?php if (!empty(trim($post['content'] ?? ''))): ?>
+                                    <div class="weibo-content">
+                                        <?php echo h($post['content']); ?>
                                     </div>
                                 <?php endif; ?>
-                                <div class="comment-list" id="comment-list-<?php echo $post['id']; ?>">
-                                    <!-- PHP 预加载部分评论 -->
-                                    <?php
-                                    $stmt_c = $pdo->prepare("SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.id WHERE c.post_id = ? ORDER BY c.created_at DESC LIMIT 5");
-                                    $stmt_c->execute([$post['id']]);
-                                    $comments = $stmt_c->fetchAll();
-                                    foreach ($comments as $comment):
-                                    ?>
-                                        <div style="border-top: 1px dashed #eee; padding: 5px 0; font-size: 13px;">
-                                            <span style="color:#fa7d3c"><?php echo h($comment['username']); ?>:</span>
-                                            <?php echo h($comment['content']); ?>
-                                        </div>
-                                    <?php endforeach; ?>
+
+                                <!-- 图片展示逻辑修改：支持九宫格 -->
+                                <?php
+                                $imgs = [];
+                                $db_path = $post['image_path'] ?? '';
+                                if (!empty($db_path)) {
+                                    // 尝试解析 JSON
+                                    $json_imgs = json_decode($db_path, true);
+                                    if (json_last_error() === JSON_ERROR_NONE && is_array($json_imgs)) {
+                                        $imgs = $json_imgs; // 新格式：多图
+                                    } else {
+                                        $imgs = [$db_path]; // 兼容旧格式：单图
+                                    }
+                                }
+                                ?>
+                                <?php if (!empty($imgs)): ?>
+                                    <div class="weibo-image-grid grid-<?php echo count($imgs); ?>">
+                                        <?php foreach ($imgs as $img_url): ?>
+                                            <div class="grid-item">
+                                                <img src="<?php echo h($img_url); ?>" alt="微博图片" loading="lazy">
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <div class="weibo-footer">
+                                    <span class="action-btn comment-toggle-btn" data-id="<?php echo $post['id']; ?>">
+                                        <i class="far fa-comment"></i> 评论
+                                    </span>
+                                    <span class="action-btn like-btn <?php echo $post['is_liked'] ? 'active' : ''; ?>" data-id="<?php echo $post['id']; ?>">
+                                        <i class="far fa-thumbs-up"></i>
+                                        <span class="like-count"><?php echo $post['like_count']; ?></span>
+                                    </span>
                                 </div>
-                            </div>
-                        </article>
-                    <?php endforeach; ?>
+
+                                <!-- 评论区域 (Ajax 加载或预加载) -->
+                                <div class="comments-section" id="comments-<?php echo $post['id']; ?>">
+                                    <?php if (isset($_SESSION['user_id'])): ?>
+                                        <div class="comment-input-group">
+                                            <input type="text" class="comment-input" placeholder="写下你的评论...">
+                                            <button class="btn submit-comment-btn" data-id="<?php echo $post['id']; ?>">评论</button>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div class="comment-list" id="comment-list-<?php echo $post['id']; ?>">
+                                        <!-- PHP 预加载部分评论 -->
+                                        <?php
+                                        $stmt_c = $pdo->prepare("SELECT c.*, u.username FROM comments c JOIN users u ON c.user_id = u.id WHERE c.post_id = ? ORDER BY c.created_at DESC LIMIT 5");
+                                        $stmt_c->execute([$post['id']]);
+                                        $comments = $stmt_c->fetchAll();
+                                        foreach ($comments as $comment):
+                                        ?>
+                                            <div style="border-top: 1px dashed #eee; padding: 5px 0; font-size: 13px;">
+                                                <span style="color:#fa7d3c"><?php echo h($comment['username']); ?>:</span>
+                                                <?php echo h($comment['content']); ?>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </main>
@@ -387,7 +452,7 @@ if ($profile_error !== '') {
             <div class="x-search-card">
                 <form action="index.php" method="GET" class="x-search-form">
                     <i class="fas fa-search"></i>
-                    <?php if (!$in_profile_view && $feed === 'following'): ?>
+                    <?php if (!$in_profile_view && !$show_recommend && $feed === 'following'): ?>
                         <input type="hidden" name="feed" value="following">
                     <?php endif; ?>
                     <input type="text" name="q" placeholder="搜索微博..." value="<?php echo h($keyword); ?>" class="x-search-input">

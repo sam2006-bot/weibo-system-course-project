@@ -1340,6 +1340,78 @@ body.home-body .btn {
     flex-direction: column;
 }
 
+.x-recommend-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.x-recommend-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--home-border);
+    background: var(--home-surface);
+}
+
+.x-recommend-item:last-child {
+    border-bottom: none;
+}
+
+.x-recommend-avatar img {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 8px 16px rgba(15, 18, 26, 0.12);
+}
+
+.x-recommend-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.x-recommend-name {
+    font-weight: 600;
+    color: #1b1b1f;
+    text-decoration: none;
+}
+
+.x-recommend-name:hover {
+    text-decoration: underline;
+}
+
+.x-recommend-handle {
+    font-size: 12px;
+    color: var(--home-muted);
+}
+
+.x-recommend-desc {
+    font-size: 13px;
+    color: #2a2d34;
+}
+
+.x-follow-btn--ghost {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+
+.x-follow-btn--ghost:hover {
+    background: var(--primary-color);
+    box-shadow: 0 10px 18px rgba(15, 18, 26, 0.2);
+}
+
+.x-follow-btn--ghost.is-following {
+    background: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
 .x-empty-state {
     padding: 30px 20px;
     text-align: center;
