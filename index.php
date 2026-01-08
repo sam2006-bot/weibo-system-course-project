@@ -203,7 +203,6 @@ if ($profile_error !== '') {
                     <section class="x-profile-hero profile-header">
                         <div class="profile-banner">
                             <div class="profile-banner-content">
-                                <span class="profile-badge">个人主页</span>
                             </div>
                         </div>
                         <div class="profile-header-content">
