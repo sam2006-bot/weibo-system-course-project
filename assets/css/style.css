@@ -1088,6 +1088,30 @@ body.home-body {
     font-weight: 600;
 }
 
+.x-refresh-btn {
+    border: 1px solid var(--home-border);
+    background: #fff;
+    color: #1b1b1f;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.x-refresh-btn:hover {
+    background: rgba(250, 125, 60, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(15, 18, 26, 0.16);
+}
+
+.x-refresh-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+    transform: none;
+}
+
 /* Profile view inside home shell */
 .x-feed-title.is-profile {
     flex-direction: row;

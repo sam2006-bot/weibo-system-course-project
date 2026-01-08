@@ -95,53 +95,175 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 3. 关注功能
-    document.querySelectorAll('[data-follow-btn]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const userId = this.dataset.userId;
-            if (!userId) return;
+    const bindFollowButtons = (root = document) => {
+        root.querySelectorAll('[data-follow-btn]').forEach(btn => {
+            if (btn.dataset.followBound === 'true') return;
+            btn.dataset.followBound = 'true';
 
-            const wasFollowing = this.classList.contains('is-following');
-            const setFollowState = (isFollowing) => {
-                this.classList.toggle('is-following', isFollowing);
-                this.setAttribute('aria-pressed', isFollowing ? 'true' : 'false');
-                this.textContent = isFollowing ? '已关注' : '关注';
-            };
+            btn.addEventListener('click', function() {
+                const userId = this.dataset.userId;
+                if (!userId) return;
 
-            this.disabled = true;
-            this.textContent = wasFollowing ? '取消中...' : '关注中...';
+                const wasFollowing = this.classList.contains('is-following');
+                const setFollowState = (isFollowing) => {
+                    this.classList.toggle('is-following', isFollowing);
+                    this.setAttribute('aria-pressed', isFollowing ? 'true' : 'false');
+                    this.textContent = isFollowing ? '已关注' : '关注';
+                };
 
-            fetch('api/follow_user.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `user_id=${encodeURIComponent(userId)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    setFollowState(!!data.is_following);
-                } else {
-                    if (data.message === '请先登录') {
-                        window.location.href = 'login.php';
-                        return;
+                this.disabled = true;
+                this.textContent = wasFollowing ? '取消中...' : '关注中...';
+
+                fetch('api/follow_user.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `user_id=${encodeURIComponent(userId)}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        setFollowState(!!data.is_following);
+                    } else {
+                        if (data.message === '请先登录') {
+                            window.location.href = 'login.php';
+                            return;
+                        }
+                        alert(data.message || '操作失败');
+                        setFollowState(wasFollowing);
                     }
-                    alert(data.message || '操作失败');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('网络错误');
                     setFollowState(wasFollowing);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('网络错误');
-                setFollowState(wasFollowing);
-            })
-            .finally(() => {
-                this.disabled = false;
+                })
+                .finally(() => {
+                    this.disabled = false;
+                });
             });
         });
-    });
+    };
 
-    // 4. 评论展开/收起
+    bindFollowButtons();
+
+    // 4. 推荐关注换一批
+    const recommendRefreshBtn = document.querySelector('[data-recommend-refresh]');
+    const recommendWrap = document.querySelector('[data-recommend-wrap]');
+    if (recommendRefreshBtn && recommendWrap) {
+        const fallbackAvatar = 'assets/images/default-avatar.png';
+
+        const formatJoinDate = (value) => {
+            if (!value) return '';
+            const date = new Date(value.replace(' ', 'T'));
+            if (Number.isNaN(date.getTime())) {
+                return value.split(' ')[0] || value;
+            }
+            const pad = (num) => String(num).padStart(2, '0');
+            return `${date.getFullYear()}年${pad(date.getMonth() + 1)}月${pad(date.getDate())}日`;
+        };
+
+        const renderRecommendList = (users) => {
+            recommendWrap.innerHTML = '';
+            if (!users || users.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'x-empty-state';
+                empty.textContent = '暂时没有可推荐的用户';
+                recommendWrap.appendChild(empty);
+                return;
+            }
+
+            const list = document.createElement('div');
+            list.className = 'x-recommend-list';
+            list.setAttribute('data-recommend-list', '');
+
+            users.forEach(user => {
+                const item = document.createElement('article');
+                item.className = 'x-recommend-item';
+
+                const avatarLink = document.createElement('a');
+                avatarLink.className = 'x-recommend-avatar';
+                avatarLink.href = `index.php?profile_id=${encodeURIComponent(user.id)}`;
+
+                const img = document.createElement('img');
+                img.alt = '头像';
+                img.src = user.avatar ? user.avatar : fallbackAvatar;
+                img.onerror = () => {
+                    img.src = 'https://via.placeholder.com/50?text=User';
+                };
+                avatarLink.appendChild(img);
+
+                const meta = document.createElement('div');
+                meta.className = 'x-recommend-meta';
+
+                const nameLink = document.createElement('a');
+                nameLink.className = 'x-recommend-name';
+                nameLink.href = `index.php?profile_id=${encodeURIComponent(user.id)}`;
+                nameLink.textContent = user.username || '未知用户';
+
+                const handle = document.createElement('span');
+                handle.className = 'x-recommend-handle';
+                handle.textContent = `#${user.id}`;
+
+                const desc = document.createElement('span');
+                desc.className = 'x-recommend-desc';
+                const joinDate = formatJoinDate(user.created_at);
+                desc.textContent = joinDate ? `加入时间：${joinDate}` : '加入时间：--';
+
+                meta.appendChild(nameLink);
+                meta.appendChild(handle);
+                meta.appendChild(desc);
+
+                const followBtn = document.createElement('button');
+                followBtn.type = 'button';
+                followBtn.className = 'x-follow-btn x-follow-btn--ghost';
+                followBtn.setAttribute('data-follow-btn', '');
+                followBtn.setAttribute('data-user-id', user.id);
+                followBtn.setAttribute('aria-pressed', 'false');
+                followBtn.textContent = '关注';
+
+                item.appendChild(avatarLink);
+                item.appendChild(meta);
+                item.appendChild(followBtn);
+                list.appendChild(item);
+            });
+
+            recommendWrap.appendChild(list);
+            bindFollowButtons(list);
+        };
+
+        const setRefreshState = (loading) => {
+            recommendRefreshBtn.disabled = loading;
+            recommendRefreshBtn.textContent = loading ? '加载中...' : '换一批';
+        };
+
+        recommendRefreshBtn.addEventListener('click', function() {
+            setRefreshState(true);
+            fetch('api/recommend_users.php?limit=6')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        if (data.message === '请先登录') {
+                            window.location.href = 'login.php';
+                            return;
+                        }
+                        alert(data.message || '获取推荐失败');
+                        return;
+                    }
+                    renderRecommendList(data.users || []);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('网络错误');
+                })
+                .finally(() => {
+                    setRefreshState(false);
+                });
+        });
+    }
+
+    // 5. 评论展开/收起
     document.querySelectorAll('.comment-toggle-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const postId = this.dataset.id;
@@ -155,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 5. 发表评论 (Ajax)
+    // 6. 发表评论 (Ajax)
     document.querySelectorAll('.submit-comment-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const postId = this.dataset.id;
@@ -189,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 6. 侧边栏用户菜单 (首页)
+    // 7. 侧边栏用户菜单 (首页)
     const userMenu = document.querySelector('[data-user-menu]');
     if (userMenu) {
         const trigger = userMenu.querySelector('[data-user-menu-trigger]');
@@ -235,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 7. 头像上传 (个人资料视图)
+    // 8. 头像上传 (个人资料视图)
     const avatarInput = document.getElementById('avatar-input');
     if (avatarInput) {
         avatarInput.addEventListener('change', function() {

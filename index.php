@@ -237,6 +237,9 @@ if (!$show_recommend) {
                 <?php if ($keyword !== '' && !$show_recommend): ?>
                     <span class="x-feed-tag">搜索：<?php echo h($keyword); ?></span>
                 <?php endif; ?>
+                <?php if ($show_recommend && isset($_SESSION['user_id'])): ?>
+                    <button type="button" class="x-refresh-btn" data-recommend-refresh>换一批</button>
+                <?php endif; ?>
             </div>
 
             <!-- 发布框 (仅登录可见) -->
@@ -267,33 +270,37 @@ if (!$show_recommend) {
                         <div class="x-empty-state">
                             <a href="login.php">登录</a>后查看推荐关注
                         </div>
-                    <?php elseif (empty($recommend_users)): ?>
-                        <div class="x-empty-state">暂时没有可推荐的用户</div>
                     <?php else: ?>
-                        <div class="x-recommend-list">
-                            <?php foreach ($recommend_users as $user): ?>
-                                <article class="x-recommend-item">
-                                    <a href="index.php?profile_id=<?php echo $user['id']; ?>" class="x-recommend-avatar">
-                                        <img src="<?php echo $user['avatar'] ? h($user['avatar']) : h(DEFAULT_AVATAR_PATH); ?>"
-                                            alt="头像"
-                                            onerror="this.src='https://via.placeholder.com/50?text=User'">
-                                    </a>
-                                    <div class="x-recommend-meta">
-                                        <a href="index.php?profile_id=<?php echo $user['id']; ?>" class="x-recommend-name">
-                                            <?php echo h($user['username']); ?>
-                                        </a>
-                                        <span class="x-recommend-handle">#<?php echo h($user['id']); ?></span>
-                                        <span class="x-recommend-desc">加入时间：<?php echo h(date('Y年m月d日', strtotime($user['created_at']))); ?></span>
-                                    </div>
-                                    <button type="button"
-                                        class="x-follow-btn x-follow-btn--ghost"
-                                        data-follow-btn
-                                        data-user-id="<?php echo $user['id']; ?>"
-                                        aria-pressed="false">
-                                        关注
-                                    </button>
-                                </article>
-                            <?php endforeach; ?>
+                        <div class="x-recommend-wrap" data-recommend-wrap>
+                            <?php if (empty($recommend_users)): ?>
+                                <div class="x-empty-state">暂时没有可推荐的用户</div>
+                            <?php else: ?>
+                                <div class="x-recommend-list" data-recommend-list>
+                                    <?php foreach ($recommend_users as $user): ?>
+                                        <article class="x-recommend-item">
+                                            <a href="index.php?profile_id=<?php echo $user['id']; ?>" class="x-recommend-avatar">
+                                                <img src="<?php echo $user['avatar'] ? h($user['avatar']) : h(DEFAULT_AVATAR_PATH); ?>"
+                                                    alt="头像"
+                                                    onerror="this.src='https://via.placeholder.com/50?text=User'">
+                                            </a>
+                                            <div class="x-recommend-meta">
+                                                <a href="index.php?profile_id=<?php echo $user['id']; ?>" class="x-recommend-name">
+                                                    <?php echo h($user['username']); ?>
+                                                </a>
+                                                <span class="x-recommend-handle">#<?php echo h($user['id']); ?></span>
+                                                <span class="x-recommend-desc">加入时间：<?php echo h(date('Y年m月d日', strtotime($user['created_at']))); ?></span>
+                                            </div>
+                                            <button type="button"
+                                                class="x-follow-btn x-follow-btn--ghost"
+                                                data-follow-btn
+                                                data-user-id="<?php echo $user['id']; ?>"
+                                                aria-pressed="false">
+                                                关注
+                                            </button>
+                                        </article>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 <?php else: ?>
