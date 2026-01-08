@@ -333,6 +333,42 @@ body {
     border-color: var(--primary-color);
 }
 
+.comment-item {
+    border-top: 1px dashed #eee;
+    padding: 5px 0;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.comment-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.comment-author {
+    color: #fa7d3c;
+    margin-right: 4px;
+}
+
+.comment-content {
+    word-break: break-word;
+}
+
+.comment-delete-btn {
+    border: none;
+    background: transparent;
+    color: #999;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0;
+}
+
+.comment-delete-btn:hover {
+    color: #e74c3c;
+}
+
 /* 个人主页样式 */
 .profile-header {
     display: flex;

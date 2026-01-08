@@ -16,10 +16,12 @@ $content = trim($_POST['content'] ?? '');
 if ($post_id && $content) {
     $stmt = $pdo->prepare("INSERT INTO comments (post_id, user_id, content) VALUES (?, ?, ?)");
     if ($stmt->execute([$post_id, $_SESSION['user_id'], $content])) {
+        $comment_id = $pdo->lastInsertId();
         echo json_encode([
             'success' => true,
-            'username' => $_SESSION['username'],
-            'content' => htmlspecialchars($content)
+            'comment_id' => $comment_id,
+            'username' => htmlspecialchars($_SESSION['username'], ENT_QUOTES, 'UTF-8'),
+            'content' => htmlspecialchars($content, ENT_QUOTES, 'UTF-8')
         ]);
     } else {
         echo json_encode(['success' => false, 'message' => '评论失败']);

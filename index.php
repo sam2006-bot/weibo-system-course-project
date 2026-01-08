@@ -145,7 +145,7 @@ if (!$show_recommend) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 </head>
 
-<body class="home-body<?php echo $in_profile_view ? ' profile-view' : ''; ?>">
+<body class="home-body<?php echo $in_profile_view ? ' profile-view' : ''; ?>" data-is-admin="<?php echo (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') ? 'true' : 'false'; ?>">
 
     <div class="x-shell">
         <aside class="x-sidebar">
@@ -441,9 +441,14 @@ if (!$show_recommend) {
                                         $comments = $stmt_c->fetchAll();
                                         foreach ($comments as $comment):
                                         ?>
-                                            <div style="border-top: 1px dashed #eee; padding: 5px 0; font-size: 13px;">
-                                                <span style="color:#fa7d3c"><?php echo h($comment['username']); ?>:</span>
-                                                <?php echo h($comment['content']); ?>
+                                            <div class="comment-item" data-comment-id="<?php echo $comment['id']; ?>">
+                                                <div class="comment-text">
+                                                    <span class="comment-author"><?php echo h($comment['username']); ?>:</span>
+                                                    <span class="comment-content"><?php echo h($comment['content']); ?></span>
+                                                </div>
+                                                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                                    <button type="button" class="comment-delete-btn" data-comment-id="<?php echo $comment['id']; ?>">删除</button>
+                                                <?php endif; ?>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>

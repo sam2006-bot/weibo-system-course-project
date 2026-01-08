@@ -1,5 +1,6 @@
 // assets/js/main.js
 document.addEventListener('DOMContentLoaded', function() {
+    const isAdmin = document.body && document.body.dataset.isAdmin === 'true';
     
     // 1. 发布微博 (支持多图上传)
     const publishBtn = document.getElementById('publish-btn');
@@ -300,14 +301,68 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 动态添加评论到列表，无需刷新
                     const list = document.getElementById(`comment-list-${postId}`);
                     const newComment = document.createElement('div');
-                    newComment.style = "border-top: 1px dashed #eee; padding: 5px 0; font-size: 13px;";
-                    newComment.innerHTML = `<span style="color:#fa7d3c">${data.username}:</span> ${data.content}`;
+                    newComment.className = 'comment-item';
+                    if (data.comment_id) {
+                        newComment.dataset.commentId = data.comment_id;
+                    }
+
+                    const textWrap = document.createElement('div');
+                    textWrap.className = 'comment-text';
+                    textWrap.innerHTML = `<span class="comment-author">${data.username}:</span> <span class="comment-content">${data.content}</span>`;
+                    newComment.appendChild(textWrap);
+
+                    if (isAdmin && data.comment_id) {
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.type = 'button';
+                        deleteBtn.className = 'comment-delete-btn';
+                        deleteBtn.dataset.commentId = data.comment_id;
+                        deleteBtn.textContent = '删除';
+                        newComment.appendChild(deleteBtn);
+                    }
+
                     list.insertBefore(newComment, list.firstChild);
                     input.value = ''; // 清空输入框
                 } else {
                     alert(data.message);
                 }
             });
+        });
+    });
+
+    // 6.1 删除评论 (管理员)
+    document.addEventListener('click', function(event) {
+        const deleteBtn = event.target.closest('.comment-delete-btn');
+        if (!deleteBtn) return;
+
+        const commentId = deleteBtn.dataset.commentId;
+        if (!commentId) return;
+
+        if (!confirm('确定删除这条评论吗？')) return;
+
+        const commentItem = deleteBtn.closest('.comment-item');
+        deleteBtn.disabled = true;
+
+        fetch('api/delete_comment.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `comment_id=${encodeURIComponent(commentId)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (commentItem) {
+                    commentItem.remove();
+                }
+            } else {
+                alert(data.message || '删除失败');
+                deleteBtn.disabled = false;
+            }
+        })
+        .catch(() => {
+            alert('网络错误');
+            deleteBtn.disabled = false;
         });
     });
 
