@@ -1,97 +1,158 @@
 # weibo-system-course-project
-微博系统课程设计 (Weibo System Course Project)
-本项是浙江工业大学 HTML5 课程的期末作业，旨在通过 PHP + Ajax + MySQL 技术栈实现一个功能完善的微博社交系统。
+这是一个基于原生 PHP + MySQL 开发的现代化仿微博/X（Twitter）社交系统。本项目是 HTML5/Web 开发课程的期末作业，旨在实现一个功能完善、界面美观且交互流畅的社交平台。
 
-1. 项目简介
-本项目参考新浪微博，构建一个包含普通用户交互与管理员后台管理的 Web 应用。
+## ✨ 项目特色
 
-核心功能清单 ：
+### 🎨 界面与交互 (UI/UX)
+现代化设计风格：采用类似 X (Twitter) 的 "Shell" 布局，响应式设计，适配桌面端与移动端。
 
-用户模块：注册、登录、个人信息管理。
+沉浸式体验：毛玻璃效果导航栏、动态背景（个人主页）、丝滑的 CSS 动画。
 
-内容交互：发布微博、评论微博、点赞、搜索。
+九宫格图片展示：智能适配 1 张、2 张、4 张及 9 张图片的布局显示。
 
-管理后台：管理员对用户、博客内容及评论的增删改查。
+无刷新交互 (Ajax)：发布微博、点赞、关注、评论、加载推荐用户均采用 Ajax 异步请求，无需刷新页面。
 
-动态交互：利用 Ajax 实现无刷新发布、评论、点赞，及 JS 动态交互效果。
+## 🚀 核心功能
+### 用户系统：
 
-### 2. 项目结构
+用户注册与登录（全新设计的 Auth 页面）。
+
+个人主页：展示用户信息、统计数据（微博数、获赞数）、个性化头像上传。
+
+关注机制：由于有了关注系统，首页支持 "为你推荐" (随机) 和 "正在关注" (关注流) 双 Tab 切换。
+
+### 内容创作：
+
+支持多图上传（单次最多 9 张）。
+
+发布纯文本或图文微博。
+
+### 社交互动：
+
+点赞/取消点赞（实时数字更新）。
+
+评论功能（支持展开/收起评论区）。
+
+侧边栏推荐关注用户（换一换功能）。
+
+全局内容搜索。
+
+### 后台管理：
+
+管理员专属仪表盘。
+
+数据统计（用户总数、微博总数）。
+
+内容审核（删除违规微博、删除评论）。
+
+用户管理（删除违规用户）。
+
+## 🛠️ 技术栈
+
+后端：PHP 7.4+ (使用 PDO 扩展进行数据库操作)
+
+前端：HTML5, CSS3 (Flexbox/Grid, CSS Variables), Vanilla JavaScript (原生 JS, Fetch API)
+
+数据库：MySQL 5.7+ / MariaDB
+
+服务器：Apache / Nginx
+
+## 📂 目录结构
 
 ```text
 weibo-system/
-├── admin/                # 管理员模块（对应要求中的管理员管理功能 ）
-│   ├── index.php         # 管理后台主页
-│   └── manage_users.php  # 用户管理逻辑
-├── api/                  # Ajax 接口目录（满足至少三处 Ajax 的要求 ）
-│   ├── post_weibo.php    # 发布微博接口
-│   ├── add_comment.php   # 发表评论接口
-│   └── like_weibo.php    # 点赞接口
-├── assets/               # 静态资源
-│   ├── css/              # 样式表（满足界面美观要求 ）
-│   ├── js/               # JavaScript 脚本（实现动态效果 ）
-│   └── images/           # 网站通用图标、背景
-├── config/               # 配置文件
-│   └── config.php        # 数据库连接配置（已在 .gitignore 中体现 ）
-├── includes/             # 公共逻辑组件
-│   ├── functions.php     # 通用 PHP 函数
-│   └── db_connect.php    # 数据库连接封装
-├── sql/                  # 数据库备份（要求必须上交 sql 备份文件 ）
-│   └── weibo_db.sql      # 数据库结构及初始数据
-├── uploads/              # 用户上传目录（已在 .gitignore 中体现 ）
-├── index.php             # 系统主页（要求自行设计 ）
-├── login.php             # 登录页面
-├── register.php          # 注册页面
-└── README.md             # 项目说明
+├── admin/                  # 管理员后台模块
+│   ├── index.php           # 后台首页 & 微博管理
+│   └── manage_users.php    # 用户管理
+├── api/                    # Ajax 接口 (RESTful 风格)
+│   ├── post_weibo.php      # 发布微博 (支持多图)
+│   ├── like_weibo.php      # 点赞/取消赞
+│   ├── follow_user.php     # 关注/取关
+│   ├── add_comment.php     # 发布评论
+│   └── recommend_users.php # 获取推荐用户
+│   └── ...
+├── assets/                 # 静态资源
+│   ├── css/style.css       # 核心样式表
+│   ├── js/main.js          # 核心交互逻辑
+│   └── images/             # 默认头像与图标
+├── config/                 # 配置文件目录
+│   └── config.php          # (需自行创建) 数据库配置
+├── includes/               # 公共组件
+│   ├── db_connect.php      # 数据库连接
+│   └── functions.php       # 通用辅助函数
+├── sql/                    # 数据库文件
+│   └── weibo_db.sql        # 初始数据库结构导入文件
+├── uploads/                # 上传文件存储目录
+│   ├── avatars/            # 用户头像
+│   └── posts/              # 微博配图
+├── index.php               # 前台首页 (Feed流)
+├── login.php               # 登录页
+├── register.php            # 注册页
+└── profile.php             # 个人主页跳转逻辑
 ```
 
-3. 成员任务分工建议 
+## ⚡ 快速开始
+1. 环境准备
+确保您的本地环境（如 XAMPP, WAMP, MAMP 或 Docker）已安装 PHP 和 MySQL。
 
-根据项目需求，建议将三人小组分为 组长/全栈、前端工程师、后端/测试工程师：
+2. 数据库配置
+进入 MySQL 数据库管理工具（如 phpMyAdmin）。
 
-成员 A（组长 / 全栈开发）
-核心职责：负责项目整体架构设计与核心逻辑。
+创建一个新的数据库，例如命名为 weibo_system。
 
-具体任务：
+导入项目根目录下的 sql/weibo_db.sql 文件。
 
-设计数据库全表结构并编写初始化 SQL 。
+注意：该 SQL 文件包含初始表结构和一个默认管理员账号。
 
-编写 PHP 后端核心逻辑（微博发布、权限管理逻辑）。
+3. 项目配置
+在 config/ 目录下创建一个名为 config.php 的文件（如果在 .gitignore 中被忽略），并填入您的数据库信息：
 
-开发管理员后台模块（用户管理、内容审核）。
 
-负责 GitHub 仓库维护及最终代码汇总。
+```php
+<?php
+// config/config.php
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'weibo_system');
+define('DB_USER', 'root');      // 您的数据库用户名
+define('DB_PASS', '');          // 您的数据库密码
+define('DB_CHARSET', 'utf8mb4');
 
-成员 B（前端工程师 / UI 交互）
-核心职责：负责系统界面美观度及所有动态交互效果。
+// 定义默认头像路径
+define('DEFAULT_AVATAR_PATH', 'assets/images/default-avatar.svg');
+?>
+注意：如果 config 文件夹不存在，您可以直接修改 includes/db_connect.php 中的数据库连接参数。
+```
 
-具体任务：
+4. 运行项目
 
-编写主页、登录页及其他功能页面的 HTML/CSS。
+将项目文件夹放置在 Web 服务器的根目录（如 htdocs 或 www）下，在浏览器访问： http://localhost/weibo-system/
 
-实现至少 3 处 JS 动态效果（如轮播图、弹窗提醒、下拉菜单等）。
+## 🔐 默认账号
 
-负责 Ajax 的前端调用逻辑，确保交互流畅。
+管理员账号 (拥有后台管理权限):
 
-优化用户体验，确保界面简洁美观。
+用户名: admin
 
-成员 C（后端工程师 / 测试与文档）
-核心职责：负责功能模块实现及项目交付物整理。
+密码: admin123
 
-具体任务：
+普通用户:
 
-编写用户注册/登录、搜索功能、评论/点赞的 PHP 接口。
+您可以在注册页面 (register.php) 自行注册新账号。
 
-协助 A 进行数据库操作及数据接口的 Ajax 响应处理 。
+## 📸 功能展示
 
-负责系统测试，寻找并修复功能 Bug。
+首页 Feed 流：查看关注人的动态或系统推荐内容。
 
-撰写课程设计报告，记录开发日志及工作量占比说明 。
+发布器：点击图片图标可选择多张图片，支持预览。
 
-4. 技术栈
-后端：PHP
+个人主页：点击头像进入，支持点击封面图更换（如有开发）或点击头像更换头像。
 
-前端：HTML5, CSS3, JavaScript (Vanilla/jQuery)
+后台管理：使用管理员账号登录后，在侧边栏点击 "管理后台" 进入。
 
-数据传输：Ajax
+## 📝 注意事项
 
-数据库：MySQL
+上传的图片会存储在 uploads/ 目录下，请确保服务器对该目录有写入权限。
+
+项目使用了 session，请确保 PHP 配置中 session.save_path 可写。
+
+为了获得最佳体验，请使用 Chrome, Edge 或 Firefox 等现代浏览器。
